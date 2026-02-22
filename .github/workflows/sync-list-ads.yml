@@ -1,7 +1,7 @@
 name: Sync Ads Files
 on:
   schedule:
-    - cron: '0 0 * * *' # Ежедневно в 00:00 UTC
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,20 +11,33 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
-          fetch-depth: 0
 
-      - name: Download files
+      - name: Download and process AdGuard DNS filter
         run: |
           mkdir -p data/ads
-          ls -la data/ads
-          curl -sSL -o data/ads/category-ads \
-            https://raw.githubusercontent.com/hydraponique/roscomvpn-geosite/refs/heads/master/data/category-ads
-          curl -sSL -o data/ads/twitch-ads \
-            https://raw.githubusercontent.com/hydraponique/roscomvpn-geosite/refs/heads/master/data/twitch-ads
+          
+          # Скачиваем файл
+          curl -sSL --fail -o data/ads/filter.txt \
+            https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_15_DnsFilter/filter.txt
+          
+          # Очищаем:
+          # 1. Удаляем строки с комментариями (!) и пустые
+          # 2. Убираем || в начале и ^ в конце
+          # 3. Фильтруем IP-адреса
+          # 4. Оставляем только валидные домены
+          grep -v '^!' data/ads/filter.txt | \
+          grep -v '^$' | \
+          sed 's/^||//; s/\^$//' | \
+          grep -vE '^[0-9]{1,3}(\.[0-9]{1,3}){3}' | \
+          grep -vE '\.[0-9]{1,3}(\.[0-9]{1,3}){3}' | \
+          grep -E '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$' | \
+          sort -u > data/ads/AdGuardDNS
+          
+          rm data/ads/filter.txt
 
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add data/ads/category-ads data/ads/twitch-ads
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update ads files" && git push)
+          git add data/ads/AdGuardDNS
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update AdGuardDNS filter" && git push)
