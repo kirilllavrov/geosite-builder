@@ -15,16 +15,16 @@ jobs:
 
       - name: Download files
         run: |
-          mkdir -p ads
-          ls -la ads
-          curl -sSL -o ads/category-ads \
+          mkdir -p data/ads
+          ls -la data/ads
+          curl -sSL -o data/ads/category-ads \
             https://raw.githubusercontent.com/hydraponique/roscomvpn-geosite/refs/heads/master/data/category-ads
-          curl -sSL -o ads/twitch-ads \
+          curl -sSL -o data/ads/twitch-ads \
             https://raw.githubusercontent.com/hydraponique/roscomvpn-geosite/refs/heads/master/data/twitch-ads
 
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add ads/category-ads ads/twitch-ads
+          git add data/ads/category-ads data/ads/twitch-ads
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update ads files" && git push)
