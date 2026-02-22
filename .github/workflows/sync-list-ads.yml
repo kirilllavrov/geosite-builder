@@ -14,33 +14,43 @@ jobs:
 
       - name: Download and process AdGuard DNS filter
         run: |
+          set +e  # Не прерывать скрипт при ошибках grep
           mkdir -p data/ads
           
           # Скачиваем
           curl -sSL --fail -o data/ads/filter.txt \
             https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_15_DnsFilter/filter.txt
           
-          # Обработка:
-          # 1. Убираем комментарии (!) и пустые строки
-          # 2. Извлекаем каждый домен из формата ||domain^ (в т.ч. если их несколько в строке)
-          # 3. Удаляем wildcard-символы (*, *., *-) в начале
-          # 4. Фильтруем IP-адреса
-          # 5. Оставляем только домены с валидным TLD
+          if [ ! -f data/ads/filter.txt ]; then
+            echo "❌ Ошибка: файл filter.txt не скачался"
+            exit 1
+          fi
+          
+          # Обработка по шагам с сохранением промежуточных результатов для отладки
           grep -v '^!' data/ads/filter.txt | \
           grep -v '^$' | \
-          grep -oP '\|\|\K[^\^]+(?=\^)' | \
-          sed 's/^\*\.//; s/^\*-//; s/^\*//' | \
+          sed 's/||/\n/g' | \
+          sed 's/\^.*//' | \
+          sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | \
           grep -v '^$' | \
+          sed 's/^\*\.//; s/^\*-//; s/^\*//; s/\.\*//; s/\*$//' | \
           grep -vE '^([0-9]{1,3}\.){3}[0-9]{1,3}' | \
-          grep -E '\.[a-zA-Z]{2,}$' | \
-          sort -u > data/ads/AdGuardDNS
+          grep -iE '^[a-z0-9]([a-z0-9.-]*\.)+[a-z]{2,}$' | \
+          sed 's/^0\.//' | \
+          sort -u > data/ads/AdGuardDNS || true
           
-          # Отладка
-          echo "=== Статистика ==="
-          echo "Исходник: $(wc -l < data/ads/filter.txt) строк"
-          echo "Результат: $(wc -l < data/ads/AdGuardDNS) строк"
-          echo "Пример (первые 10):"
-          head -10 data/ads/AdGuardDNS || echo "(пусто)"
-          echo "Размер файла: $(ls -lh data/ads/AdGuardDNS | awk '{print $5}')"
+          # Проверка результата
+          if [ -f data/ads/AdGuardDNS ] && [ -s data/ads/AdGuardDNS ]; then
+            echo "✅ Файл создан успешно"
+            echo "Строк в результате: $(wc -l < data/ads/AdGuardDNS)"
+            echo "Пример (первые 10):"
+            head -10 data/ads/AdGuardDNS
+          else
+            echo "❌ Файл AdGuardDNS пуст или не создан"
+            echo "Размер: $(ls -lh data/ads/AdGuardDNS 2>/dev/null || echo 'файл отсутствует')"
+            # Покажем, что осталось после предпоследнего шага
+            echo "Проверка после удаления IP (первые 10):"
+            grep -v '^!' data/ads/filter.txt | grep -v '^$' | sed 's/||/\n/g' | sed 's/\^.*//' | grep -vE '^([0-9]{1,3}\.){3}[0-9]{1,3}' | head -10
+          fi
           
-          rm data/ads/filter.txt
+          rm -f data/ads/filter.txt
