@@ -16,28 +16,29 @@ jobs:
         run: |
           mkdir -p data/ads
           
-          # Скачиваем файл
+          # Скачиваем
           curl -sSL --fail -o data/ads/filter.txt \
             https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_15_DnsFilter/filter.txt
           
-          # Очищаем:
-          # 1. Удаляем строки с комментариями (!) и пустые
-          # 2. Убираем || в начале и ^ в конце
-          # 3. Фильтруем IP-адреса
-          # 4. Оставляем только валидные домены
+          # 1. Убираем комментарии и пустые строки
+          # 2. Разбиваем строки с несколькими доменами (||dom1^||dom2^)
+          # 3. Удаляем || и ^
+          # 4. Фильтруем IP
+          # 5. Оставляем только домены с точкой и TLD >= 2 символов
           grep -v '^!' data/ads/filter.txt | \
           grep -v '^$' | \
-          sed 's/^||//; s/\^$//' | \
-          grep -vE '^[0-9]{1,3}(\.[0-9]{1,3}){3}' | \
-          grep -vE '\.[0-9]{1,3}(\.[0-9]{1,3}){3}' | \
-          grep -E '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$' | \
+          sed 's/||/\n/g' | \
+          sed 's/\^//g' | \
+          grep -v '^$' | \
+          grep -vE '^([0-9]{1,3}\.){3}[0-9]{1,3}' | \
+          grep -iE '^[a-z0-9]([a-z0-9.-]*\.)+[a-z]{2,}$' | \
           sort -u > data/ads/AdGuardDNS
           
+          # Отладка: покажи статистику
+          echo "=== Статистика ==="
+          echo "Строк в исходнике: $(wc -l < data/ads/filter.txt)"
+          echo "Строк в результате: $(wc -l < data/ads/AdGuardDNS)"
+          echo "Пример (первые 10 строк):"
+          head -10 data/ads/AdGuardDNS || echo "(файл пуст)"
+          
           rm data/ads/filter.txt
-
-      - name: Commit and push if changed
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add data/ads/AdGuardDNS
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update AdGuardDNS filter" && git push)
