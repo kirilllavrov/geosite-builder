@@ -51,6 +51,10 @@ jobs:
           echo "📊 Размер: $(ls -lh ./output/geosite.dat \
             | awk '{print $5}')"
 
+          # Копируем в корень репозитория для релиза
+          mkdir -p ../output
+          cp ./output/geosite.dat ../output/geosite.dat
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -64,6 +68,7 @@ jobs:
           files: output/geosite.dat
           fail_on_unmatched_files: true
           make_latest: true
+          overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
