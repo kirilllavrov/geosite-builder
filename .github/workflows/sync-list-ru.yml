@@ -27,7 +27,7 @@ jobs:
           cd geosite-builder
           mkdir -p data/ru
           rm -rf data/ru/*
-          cp -r ../source-repo/domains/* data/ru/
+          cp -r ../source-repo/domains/ru/* data/ru/
 
       - name: Commit and push
         run: |
