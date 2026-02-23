@@ -1,7 +1,0 @@
-include:ads/mail-ads
-include:ads/twitch-ads
-include:mobile/apple @ads
-include:mobile/huawei @ads
-include:mobile/oppo @ads
-include:mobile/samsung @ads
-include:mobile/xiaomi @ads

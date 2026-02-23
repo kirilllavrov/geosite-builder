@@ -28,31 +28,28 @@ jobs:
       - name: Prepare data for build
         run: |
           rm -rf builder/data
-          mkdir -p builder/data/ads builder/data/mobile builder/data/ru
+          mkdir -p builder/data/ads \
+            builder/data/mobile \
+            builder/data/ru
 
           cp -r data/ads/* builder/data/ads/ 2>/dev/null || true
           cp -r data/mobile/* builder/data/mobile/ 2>/dev/null || true
           cp -r data/ru/* builder/data/ru/ 2>/dev/null || true
-          cp data/category-* builder/data/ 2>/dev/null || true
 
-          echo "📁 Категории:"
-          ls -1 builder/data/category-* 2>/dev/null || echo "(нет)"
-          echo "📁 Файлов в ads/:"
-          ls -1 builder/data/ads/ 2>/dev/null | wc -l
-          echo "📁 Файлов в ru/:"
-          ls -1 builder/data/ru/ 2>/dev/null | wc -l
-          echo "📄 Пример category-ads:"
-          head -3 builder/data/category-ads 2>/dev/null || echo "(файл не найден)"
+          echo "📁 Структура:"
+          find builder/data -maxdepth 2 -type f | head -20
 
       - name: Generate geosite.dat
         run: |
           cd builder
-          if ! go run ./ --datapath=./data --outputdir=./output; then
+          if ! go run ./ --datapath=./data \
+            --outputdir=./output; then
             echo "❌ Ошибка сборки"
             exit 1
           fi
           mv ./output/dlc.dat ./output/geosite.dat
-          echo "📊 Размер: $(ls -lh ./output/geosite.dat | awk '{print $5}')"
+          echo "📊 Размер: $(ls -lh ./output/geosite.dat \
+            | awk '{print $5}')"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
