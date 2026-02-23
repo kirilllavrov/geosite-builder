@@ -13,33 +13,56 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
-      - name: Download and process AdGuard DNS filter
+      - name: Download and process filter lists
         run: |
           set +e
           mkdir -p data/ads
 
-          curl -sSL --fail -o data/ads/filter.txt \
-            https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_15_DnsFilter/filter.txt
+          declare -a SOURCES=(
+            "https://adguardteam.github.io/AdguardFilters/BaseFilter/sections/adservers.txt|adservers"
+            "https://adguardteam.github.io/AdguardFilters/BaseFilter/sections/adservers_firstparty.txt|adservers_fp"
+            "https://adguardteam.github.io/AdguardFilters/MobileFilter/sections/adservers.txt|mobile_adservers"
+            "https://adguardteam.github.io/AdguardFilters/CyrillicFilters/RussianFilter/sections/adservers_firstparty.txt|ru_adservers_fp"
+            "https://raw.githubusercontent.com/easylist/easylist/master/easylist/easylist_adservers.txt|easylist_adservers"
+            "https://adguardteam.github.io/AdguardFilters/SpywareFilter/sections/tracking_servers.txt|tracking"
+            "https://adguardteam.github.io/AdguardFilters/SpywareFilter/sections/mobile.txt|tracking_mobile"
+            "https://adguardteam.github.io/AdguardFilters/BaseFilter/sections/cryptominers.txt|cryptominers"
+          )
 
-          if [ ! -f data/ads/filter.txt ]; then
-            echo "❌ Ошибка: файл filter.txt не скачался"
-            exit 1
-          fi
+          TEMP_ALL=$(mktemp)
 
-          grep -v '^!' data/ads/filter.txt | \
-          grep -v '^$' | \
-          sed 's/||/\n/g' | \
-          sed 's/\^.*//' | \
-          sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | \
-          grep -v '^$' | \
-          sed 's/^\*\.//; s/^\*-//; s/^\*//; s/\.\*//; s/\*$//' | \
-          grep -vE '^([0-9]{1,3}\.){3}[0-9]{1,3}' | \
-          grep -iE '^[a-z0-9]([a-z0-9.-]*\.)+[a-z]{2,}$' | \
-          sed 's/^0\.//' | \
-          sort -u > data/ads/AdGuardDNS || true
+          for entry in "${SOURCES[@]}"; do
+            URL="${entry%%|*}"
+            NAME="${entry##*|}"
+            TMP_FILE="data/ads/tmp_${NAME}.txt"
 
-          echo "Строк в AdGuardDNS: $(wc -l < data/ads/AdGuardDNS)"
-          rm -f data/ads/filter.txt
+            echo "📥 Обработка: $NAME"
+
+            if ! curl -sSL --fail -o "$TMP_FILE" "$URL"; then
+              echo "⚠️ Не удалось скачать $URL, пропускаем"
+              continue
+            fi
+
+            grep -v '^!' "$TMP_FILE" | \
+            grep -v '^$' | \
+            sed 's/||/\n/g; s/\^.*//' | \
+            sed 's/^\*\.//; s/^\*-//; s/^\*//; s/\.\*//; s/\*$//' | \
+            grep -v '^$' | \
+            grep -vE '^([0-9]{1,3}\.){3}[0-9]{1,3}' | \
+            grep -iE '^[a-z0-9]([a-z0-9.-]*\.)+[a-z]{2,}$' | \
+            sed 's/^0\.//' >> "$TEMP_ALL" || true
+
+            rm -f "$TMP_FILE"
+          done
+
+          sort -u "$TEMP_ALL" > data/ads/AdGuardDNS
+          rm -f "$TEMP_ALL"
+
+          echo "✅ Готово"
+          echo "Всего уникальных доменов: $(wc -l < data/ads/AdGuardDNS)"
+          echo "Размер: $(ls -lh data/ads/AdGuardDNS | awk '{print $5}')"
+          echo "Пример (первые 10):"
+          head -10 data/ads/AdGuardDNS
 
       - name: Commit and push
         run: |
