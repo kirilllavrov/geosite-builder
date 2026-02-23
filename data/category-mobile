@@ -3,9 +3,3 @@ include:./mobile/huawei
 include:./mobile/oppo
 include:./mobile/samsung
 include:./mobile/xiaomi
-include:./mobile/
-include:./mobile/
-include:./mobile/
-include:./mobile/
-include:./mobile/
-include:./mobile/
