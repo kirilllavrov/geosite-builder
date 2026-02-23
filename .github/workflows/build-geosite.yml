@@ -27,9 +27,20 @@ jobs:
 
       - name: Prepare data for build
         run: |
-          cp -r data builder/data
-          echo "📁 Категории:"
-          ls -1 builder/data/category-* 2>/dev/null || echo "(нет)"
+          mkdir -p builder/data
+          cp -r data/* builder/data/
+
+          for cat in builder/data/category-*; do
+            [ -f "$cat" ] || continue
+            sed -i \
+              -e 's|include:./[Aa][Dd][Ss]/|include:./ads/|g' \
+              -e 's|include:./[Rr][Uu]/|include:./ru/|g' \
+              -e 's|include:./[Mm][Oo][Bb][Ii][Ll][Ee]/|include:./mobile/|g' \
+              "$cat"
+          done
+
+          echo "📁 Структура:"
+          find builder/data -maxdepth 2 -type f | head -20
 
       - name: Generate geosite.dat
         run: |
@@ -45,7 +56,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
-          name: Geosite build #${{ github.run_number }}
+          name: Geosite build #${{ github.run_number }}  # yamllint disable-line rule:comments
           body: |
             Автоматическая сборка geosite.dat
 
@@ -61,10 +72,8 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-
           git status
           git add data/
-
           if ! git diff --staged --quiet; then
             git commit -m "chore: sync source data ($(date +%Y-%m-%d))"
             git push origin HEAD:${{ github.ref_name }}
