@@ -1,3 +1,4 @@
+---
 name: Sync Ads Files
 on:
   schedule:
@@ -16,15 +17,15 @@ jobs:
         run: |
           set +e
           mkdir -p data/ads
-          
+
           curl -sSL --fail -o data/ads/filter.txt \
             https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_15_DnsFilter/filter.txt
-          
+
           if [ ! -f data/ads/filter.txt ]; then
             echo "❌ Ошибка: файл filter.txt не скачался"
             exit 1
           fi
-          
+
           grep -v '^!' data/ads/filter.txt | \
           grep -v '^$' | \
           sed 's/||/\n/g' | \
@@ -36,7 +37,7 @@ jobs:
           grep -iE '^[a-z0-9]([a-z0-9.-]*\.)+[a-z]{2,}$' | \
           sed 's/^0\.//' | \
           sort -u > data/ads/AdGuardDNS || true
-          
+
           echo "Строк в AdGuardDNS: $(wc -l < data/ads/AdGuardDNS)"
           rm -f data/ads/filter.txt
 
@@ -44,10 +45,10 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          
+
           git status
           git add data/ads/AdGuardDNS
-          
+
           if ! git diff --staged --quiet; then
             git commit -m "chore: update AdGuardDNS filter ($(date +%Y-%m-%d))"
             git push origin HEAD:${{ github.ref_name }}
