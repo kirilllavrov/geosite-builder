@@ -25,34 +25,35 @@ jobs:
       - name: Sync and process RU domains
         run: |
           cd geosite-builder
-          mkdir -p data/ru data/ads data/mobile
+          mkdir -p data/ru
 
-          # Копируем файлы, приводя имена к нижнему регистру
-          for src in ../source-repo/domains/ru/*; do
-            [ -f "$src" ] || continue
-            fname=$(basename "$src" | tr '[:upper:]' '[:lower:]')
-            cp "$src" "data/ru/$fname"
-          done
+          # Копируем файлы из исходного репозитория
+          rm -rf data/ru/*
+          cp -r ../source-repo/domains/ru/* data/ru/
 
           # Удаляем файлы, которые не нужны в этом репозитории
           rm -f data/ru/category-ru data/ru/whitelist-ru
 
-          # Раскомментируем домены, но сохраняем комментарии
+          # Раскомментируем домены, но сохраняем настоящие комментарии
           for file in data/ru/*; do
             [ -f "$file" ] || continue
-            sed -i -E 's/^#[[:space:]]*([a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,})[[:space:]]*$/\1/' "$file"
+            sed -i -E \
+              's/^#[[:space:]]*([a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,})[[:space:]]*$/\1/' \
+              "$file"
             echo "✅ Обработан: $(basename "$file")"
           done
 
-          # Генерируем category-ru без ./ и в нижнем регистре
-          echo "# Auto-generated RU category list" > data/ru/category-ru
-          echo "# Generated: $(date -Iseconds)" >> data/ru/category-ru
-          echo "" >> data/ru/category-ru
-          for file in data/ru/*; do
-            [ -f "$file" ] || continue
-            fname=$(basename "$file")
-            echo "include:ru/${fname}" >> data/ru/category-ru
-          done
+          # Генерируем category-ru с путями без ./ и в нижнем регистре
+          {
+            echo "# Auto-generated RU category list"
+            echo "# Generated: $(date -Iseconds)"
+            echo ""
+            for file in data/ru/*; do
+              [ -f "$file" ] || continue
+              fname=$(basename "$file")
+              echo "include:ru/${fname}"
+            done
+          } > data/category-ru
 
           echo "📊 Файлов в data/ru/: $(ls -1 data/ru/ 2>/dev/null | wc -l)"
 
@@ -63,7 +64,7 @@ jobs:
           git config user.email "actions@github.com"
 
           git status
-          git add data/ru/ data/ru/category-ru
+          git add data/ru/ data/category-ru
 
           if ! git diff --staged --quiet; then
             git commit -m "chore: sync RU domains ($(date +%Y-%m-%d))"
