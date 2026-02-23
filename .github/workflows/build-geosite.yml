@@ -1,0 +1,60 @@
+---
+name: Build Geosite
+on:
+  schedule:
+    - cron: '0 2 * * *'  # yamllint disable-line rule:truthy
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          path: geosite-builder
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Clone v2fly builder
+        run: |
+          git clone --depth 1 \
+            https://github.com/v2fly/domain-list-community.git builder
+          cd builder
+          go mod download
+
+      - name: Prepare data for build
+        run: |
+          cd geosite-builder
+          cp -r data builder/
+
+          echo "📁 Категории:"
+          ls -1 builder/data/category-* 2>/dev/null || echo "(нет)"
+          echo "📁 Поддиректории:"
+          ls -1 builder/data/ | grep -v category || echo "(пусто)"
+
+      - name: Generate geosite.dat
+        run: |
+          cd builder
+          go run ./ --datapath=./data --outputdir=./output
+          mv ./output/dlc.dat ./output/geosite.dat
+          echo "📊 Размер: $(ls -lh ./output/geosite.dat | awk '{print $5}')"
+
+      - name: Commit and push
+        run: |
+          cd geosite-builder
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git status
+          git add output/geosite.dat
+
+          if ! git diff --staged --quiet; then
+            git commit -m "build: update geosite.dat ($(date +%Y-%m-%d))"
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "✅ Изменений нет, пуш не требуется"
+          fi
