@@ -1,4 +1,3 @@
-include:ads/adguarddns
 include:ads/mail-ads
 include:ads/twitch-ads
 include:mobile/apple @ads
