@@ -1,3 +1,6 @@
+include:huawei-dev
+include:huaweicloud
+
 abhouses.com
 agconnect.link
 dbank.com
@@ -20,8 +23,6 @@ hwccpc.com
 hwht.cn
 hwocloud.com
 hwtrip.com
-include:huawei-dev
-include:huaweicloud
 shanhaitujian.com
 vmall.com
 vmallres.com
