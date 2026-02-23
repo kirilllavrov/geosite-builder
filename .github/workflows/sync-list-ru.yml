@@ -43,7 +43,7 @@ jobs:
             echo "✅ Обработан: $(basename "$file")"
           done
 
-          # Генерируем category-ru с путями без ./ и в нижнем регистре
+          # Генерируем category-ru внутри data/ru/ с путями без ./
           {
             echo "# Auto-generated RU category list"
             echo "# Generated: $(date -Iseconds)"
@@ -51,9 +51,9 @@ jobs:
             for file in data/ru/*; do
               [ -f "$file" ] || continue
               fname=$(basename "$file")
-              echo "include:ru/${fname}"
+              echo "include:$fname"
             done
-          } > data/category-ru
+          } > data/ru/category-ru
 
           echo "📊 Файлов в data/ru/: $(ls -1 data/ru/ 2>/dev/null | wc -l)"
 
@@ -64,7 +64,7 @@ jobs:
           git config user.email "actions@github.com"
 
           git status
-          git add data/ru/ data/category-ru
+          git add data/ru/
 
           if ! git diff --staged --quiet; then
             git commit -m "chore: sync RU domains ($(date +%Y-%m-%d))"
