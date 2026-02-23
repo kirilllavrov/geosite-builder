@@ -22,28 +22,36 @@ jobs:
           path: source-repo
           fetch-depth: 0
 
-      - name: Sync domains to data/ru
+      - name: Sync and process RU domains
         run: |
           cd geosite-builder
-          mkdir -p data/ru
-          rm -rf data/ru/*
-          cp -r ../source-repo/domains/ru/* data/ru/
+          mkdir -p data/ru data/ads data/mobile
 
+          # Копируем файлы, приводя имена к нижнему регистру
+          for src in ../source-repo/domains/ru/*; do
+            [ -f "$src" ] || continue
+            fname=$(basename "$src" | tr '[:upper:]' '[:lower:]')
+            cp "$src" "data/ru/$fname"
+          done
+
+          # Удаляем файлы, которые не нужны в этом репозитории
           rm -f data/ru/category-ru data/ru/whitelist-ru
 
+          # Раскомментируем домены, но сохраняем комментарии
           for file in data/ru/*; do
             [ -f "$file" ] || continue
             sed -i -E 's/^#[[:space:]]*([a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,})[[:space:]]*$/\1/' "$file"
             echo "✅ Обработан: $(basename "$file")"
           done
 
+          # Генерируем category-ru без ./ и в нижнем регистре
           echo "# Auto-generated RU category list" > data/category-ru
           echo "# Generated: $(date -Iseconds)" >> data/category-ru
           echo "" >> data/category-ru
           for file in data/ru/*; do
             [ -f "$file" ] || continue
-            filename=$(basename "$file")
-            echo "include:./ru/${filename}" >> data/category-ru
+            fname=$(basename "$file")
+            echo "include:ru/${fname}" >> data/category-ru
           done
 
           echo "📊 Файлов в data/ru/: $(ls -1 data/ru/ 2>/dev/null | wc -l)"

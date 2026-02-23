@@ -1,73 +1,82 @@
 ---
-name: Sync RU Lists
+name: Build Geosite
 on:
   schedule:
-    - cron: '0 0 * * *'  # yamllint disable-line rule:truthy
+    - cron: '0 2 * * *'  # yamllint disable-line rule:truthy
   workflow_dispatch:
 
 jobs:
-  sync:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
-          path: geosite-builder
 
-      - name: Checkout source repo
-        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          repository: kirilllavrov/RU-domain-list-for-whitelist
-          token: ${{ secrets.GH_PAT }}
-          path: source-repo
-          fetch-depth: 0
+          go-version: '1.21'
 
-      - name: Sync and process RU domains
+      - name: Clone v2fly builder
         run: |
-          cd geosite-builder
-          mkdir -p data/ru data/ads data/mobile
+          git clone --depth 1 \
+            https://github.com/v2fly/domain-list-community.git builder
 
-          # Копируем файлы, приводя имена к нижнему регистру
-          for src in ../source-repo/domains/ru/*; do
-            [ -f "$src" ] || continue
-            fname=$(basename "$src" | tr '[:upper:]' '[:lower:]')
-            cp "$src" "data/ru/$fname"
-          done
-
-          # Удаляем файлы, которые не нужны в этом репозитории
-          rm -f data/ru/category-ru data/ru/whitelist-ru
-
-          # Раскомментируем домены, но сохраняем комментарии
-          for file in data/ru/*; do
-            [ -f "$file" ] || continue
-            sed -i -E 's/^#[[:space:]]*([a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,})[[:space:]]*$/\1/' "$file"
-            echo "✅ Обработан: $(basename "$file")"
-          done
-
-          # Генерируем category-ru без ./ и в нижнем регистре
-          echo "# Auto-generated RU category list" > data/category-ru
-          echo "# Generated: $(date -Iseconds)" >> data/category-ru
-          echo "" >> data/category-ru
-          for file in data/ru/*; do
-            [ -f "$file" ] || continue
-            fname=$(basename "$file")
-            echo "include:ru/${fname}" >> data/category-ru
-          done
-
-          echo "📊 Файлов в data/ru/: $(ls -1 data/ru/ 2>/dev/null | wc -l)"
-
-      - name: Commit and push
+      - name: Prepare data for build
         run: |
-          cd geosite-builder
+          mkdir -p builder/data
+          cp -r data/* builder/data/
+
+          for cat in builder/data/category-*; do
+            [ -f "$cat" ] || continue
+            sed -i \
+              -e 's|include:./[Aa][Dd][Ss]/|include:./ads/|g' \
+              -e 's|include:./[Rr][Uu]/|include:./ru/|g' \
+              -e 's|include:./[Mm][Oo][Bb][Ii][Ll][Ee]/|include:./mobile/|g' \
+              "$cat"
+          done
+
+          echo "📁 Структура:"
+          find builder/data -maxdepth 2 -type f | head -20
+
+      - name: Generate geosite.dat
+        run: |
+          cd builder
+          if ! go run ./ --datapath=./data --outputdir=./output; then
+            echo "❌ Ошибка сборки"
+            exit 1
+          fi
+          mv ./output/dlc.dat ./output/geosite.dat
+          echo "📊 Размер: $(ls -lh ./output/geosite.dat | awk '{print $5}')"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Geosite build #${{ github.run_number }}  # yamllint disable-line rule:comments
+          body: |
+            Автоматическая сборка geosite.dat
+
+            🔄 Run: #${{ github.run_number }}
+            🔗 Commit: ${{ github.sha }}
+          files: output/geosite.dat
+          fail_on_unmatched_files: true
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+      - name: Commit source changes
+        run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-
           git status
-          git add data/ru/ data/category-ru
-
+          git add data/
           if ! git diff --staged --quiet; then
-            git commit -m "chore: sync RU domains ($(date +%Y-%m-%d))"
+            git commit -m "chore: sync source data ($(date +%Y-%m-%d))"
             git push origin HEAD:${{ github.ref_name }}
           else
-            echo "✅ Изменений нет, пуш не требуется"
+            echo "✅ Исходники без изменений"
           fi
