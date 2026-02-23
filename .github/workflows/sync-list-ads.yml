@@ -55,14 +55,14 @@ jobs:
             rm -f "$TMP_FILE"
           done
 
-          sort -u "$TEMP_ALL" > data/ads/AdGuardDNS
+          sort -u "$TEMP_ALL" > data/ads/adguarddns
           rm -f "$TEMP_ALL"
 
           echo "✅ Готово"
-          echo "Всего уникальных доменов: $(wc -l < data/ads/AdGuardDNS)"
-          echo "Размер: $(ls -lh data/ads/AdGuardDNS | awk '{print $5}')"
+          echo "Всего уникальных доменов: $(wc -l < data/ads/adguarddns)"
+          echo "Размер: $(ls -lh data/ads/adguarddns | awk '{print $5}')"
           echo "Пример (первые 10):"
-          head -10 data/ads/AdGuardDNS
+          head -10 data/ads/adguarddns
 
       - name: Commit and push
         run: |
@@ -70,7 +70,7 @@ jobs:
           git config user.email "actions@github.com"
 
           git status
-          git add data/ads/AdGuardDNS
+          git add data/ads/adguarddns
 
           if ! git diff --staged --quiet; then
             git commit -m "chore: update AdGuardDNS filter ($(date +%Y-%m-%d))"
