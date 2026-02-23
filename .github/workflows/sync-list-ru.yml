@@ -22,6 +22,10 @@ jobs:
           path: source-repo
           fetch-depth: 0
 
+      - name: Setup Python for IDN conversion
+        run: |
+          python3 -m pip install --quiet idna
+
       - name: Sync and process RU domains
         run: |
           cd geosite-builder
@@ -34,14 +38,53 @@ jobs:
           # Удаляем файлы, которые не нужны в этом репозитории
           rm -f data/ru/category-ru data/ru/whitelist-ru
 
-          # Раскомментируем домены, но сохраняем настоящие комментарии
-          for file in data/ru/*; do
-            [ -f "$file" ] || continue
-            sed -i -E \
-              's/^#[[:space:]]*([a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,})[[:space:]]*$/\1/' \
-              "$file"
-            echo "✅ Обработан: $(basename "$file")"
-          done
+          # Скрипт для обработки: раскомментирование + punycode + валидация
+          cat > /tmp/process_domains.py << 'PYEOF'
+          import sys, re
+          try:
+              import idna
+          except ImportError:
+              print("❌ idna library not installed", file=sys.stderr)
+              sys.exit(1)
+
+          def to_punycode(domain):
+              try:
+                  return idna.encode(domain, uts46=True).decode('ascii').lower()
+              except:
+                  return None
+
+          def is_valid_ascii_domain(d):
+              return bool(re.match(r'^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$', d))
+
+          for filepath in sys.argv[1:]:
+              try:
+                  with open(filepath, 'r', encoding='utf-8') as f:
+                      lines = f.readlines()
+                  result = []
+                  for line in lines:
+                      line = line.strip()
+                      # Пропускаем комментарии и пустые строки
+                      if not line or line.startswith('#'):
+                          continue
+                      # Раскомментируем, если домен закомментирован
+                      if line.startswith('#'):
+                          line = line[1:].strip()
+                      # Конвертируем в punycode, если есть не-ASCII
+                      if any(ord(c) > 127 for c in line):
+                          converted = to_punycode(line)
+                          if converted and is_valid_ascii_domain(converted):
+                              result.append(converted)
+                      elif is_valid_ascii_domain(line.lower()):
+                          result.append(line.lower())
+                  with open(filepath, 'w', encoding='utf-8') as f:
+                      f.write('\n'.join(result) + '\n' if result else '')
+                  print(f"✅ {filepath}: {len(result)} доменов")
+              except Exception as e:
+                  print(f"❌ {filepath}: {e}", file=sys.stderr)
+          PYEOF
+
+          # Обрабатываем все файлы в data/ru/
+          python3 /tmp/process_domains.py data/ru/*
 
           # Генерируем category-ru внутри data/ru/ с путями без ./
           {
@@ -56,6 +99,8 @@ jobs:
           } > data/ru/category-ru
 
           echo "📊 Файлов в data/ru/: $(ls -1 data/ru/ 2>/dev/null | wc -l)"
+          echo "Пример (первые 10 строк из первого файла):"
+          head -10 data/ru/* 2>/dev/null | head -10
 
       - name: Commit and push
         run: |
