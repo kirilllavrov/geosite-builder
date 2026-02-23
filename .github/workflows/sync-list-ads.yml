@@ -1,5 +1,5 @@
 ---
-name: Sync Ads Files
+name: Sync Ads Lists
 on:
   schedule:
     - cron: '0 0 * * *'
