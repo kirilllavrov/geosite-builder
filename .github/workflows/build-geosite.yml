@@ -27,20 +27,22 @@ jobs:
 
       - name: Prepare data for build
         run: |
-          mkdir -p builder/data
-          cp -r data/* builder/data/
+          rm -rf builder/data
+          mkdir -p builder/data/ads builder/data/mobile builder/data/ru
 
-          for cat in builder/data/category-*; do
-            [ -f "$cat" ] || continue
-            sed -i \
-              -e 's|include:./[Aa][Dd][Ss]/|include:./ads/|g' \
-              -e 's|include:./[Rr][Uu]/|include:./ru/|g' \
-              -e 's|include:./[Mm][Oo][Bb][Ii][Ll][Ee]/|include:./mobile/|g' \
-              "$cat"
-          done
+          cp -r data/ads/* builder/data/ads/ 2>/dev/null || true
+          cp -r data/mobile/* builder/data/mobile/ 2>/dev/null || true
+          cp -r data/ru/* builder/data/ru/ 2>/dev/null || true
+          cp data/category-* builder/data/ 2>/dev/null || true
 
-          echo "📁 Структура:"
-          find builder/data -maxdepth 2 -type f | head -20
+          echo "📁 Категории:"
+          ls -1 builder/data/category-* 2>/dev/null || echo "(нет)"
+          echo "📁 Файлов в ads/:"
+          ls -1 builder/data/ads/ 2>/dev/null | wc -l
+          echo "📁 Файлов в ru/:"
+          ls -1 builder/data/ru/ 2>/dev/null | wc -l
+          echo "📄 Пример category-ads:"
+          head -3 builder/data/category-ads 2>/dev/null || echo "(файл не найден)"
 
       - name: Generate geosite.dat
         run: |
