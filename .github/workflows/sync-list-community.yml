@@ -1,0 +1,68 @@
+---
+name: Sync Community Lists
+on:
+  schedule:
+    - cron: '0 0 * * *'  # yamllint disable-line rule:truthy
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Download community domain lists
+        run: |
+          set +e
+          mkdir -p data/mobile
+
+          declare -a SOURCES=(
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/huawei|huawei"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/huawei-dev|huawei-dev"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/huaweicloud|huaweicloud"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/xiaomi|xiaomi"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/xiaomi-ai|xiaomi-ai"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/xiaomi-iot|xiaomi-iot"
+          )
+
+          for entry in "${SOURCES[@]}"; do
+            URL="${entry%%|*}"
+            NAME="${entry##*|}"
+            OUT_FILE="data/mobile/${NAME}"
+
+            echo "📥 Загрузка: ${NAME}"
+
+            if ! curl -sSL --fail -o "${OUT_FILE}.tmp" "${URL}"; then
+              echo "⚠️ Не удалось скачать ${URL}, пропускаем"
+              rm -f "${OUT_FILE}.tmp"
+              continue
+            fi
+
+            # Очистка: убираем комментарии (#, !) и пустые строки
+            grep -v '^[[:space:]]*[#!]' "${OUT_FILE}.tmp" | \
+            grep -v '^[[:space:]]*$' | \
+            sed 's/[[:space:]]*$//' | \
+            sort -u > "${OUT_FILE}"
+
+            rm -f "${OUT_FILE}.tmp"
+            echo "✅ ${NAME}: $(wc -l < "${OUT_FILE}") строк"
+          done
+
+          echo "📊 Итого файлов: $(ls -1 data/mobile/ | wc -l)"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git status
+          git add data/mobile/
+
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update community lists ($(date +%Y-%m-%d))"
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "✅ Изменений нет, пуш не требуется"
+          fi
