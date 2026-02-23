@@ -8,11 +8,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
-          path: geosite-builder
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -23,38 +24,48 @@ jobs:
         run: |
           git clone --depth 1 \
             https://github.com/v2fly/domain-list-community.git builder
-          cd builder
-          go mod download
 
       - name: Prepare data for build
         run: |
-          cd geosite-builder
-          cp -r data builder/
-
+          cp -r data builder/data
           echo "📁 Категории:"
           ls -1 builder/data/category-* 2>/dev/null || echo "(нет)"
-          echo "📁 Поддиректории:"
-          ls -1 builder/data/ | grep -v category || echo "(пусто)"
 
       - name: Generate geosite.dat
         run: |
           cd builder
-          go run ./ --datapath=./data --outputdir=./output
+          if ! go run ./ --datapath=./data --outputdir=./output; then
+            echo "❌ Ошибка сборки"
+            exit 1
+          fi
           mv ./output/dlc.dat ./output/geosite.dat
           echo "📊 Размер: $(ls -lh ./output/geosite.dat | awk '{print $5}')"
 
-      - name: Commit and push
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.date.outputs.date }}
+          name: Geosite ${{ steps.date.outputs.date }}
+          body: |
+            Автоматическая сборка geosite.dat
+
+            📅 Дата: ${{ steps.date.outputs.date }}
+            🔗 Коммит: ${{ github.sha }}
+          files: builder/output/geosite.dat
+          fail_on_unmatched_files: true
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+      - name: Commit source changes
         run: |
-          cd geosite-builder
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-
           git status
-          git add output/geosite.dat
-
+          git add data/
           if ! git diff --staged --quiet; then
-            git commit -m "build: update geosite.dat ($(date +%Y-%m-%d))"
+            git commit -m "chore: sync source data ($(date +%Y-%m-%d))"
             git push origin HEAD:${{ github.ref_name }}
           else
-            echo "✅ Изменений нет, пуш не требуется"
+            echo "✅ Исходники без изменений"
           fi
