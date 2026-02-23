@@ -1,5 +1,5 @@
 ---
-name: Sync Community Lists
+name: Sync Mobile Lists
 on:
   schedule:
     - cron: '0 0 * * *'  # yamllint disable-line rule:truthy
@@ -13,9 +13,8 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
-      - name: Download community domain lists
+      - name: Download mobile domain lists
         run: |
-          set +e
           mkdir -p data/mobile
 
           declare -a SOURCES=(
@@ -34,23 +33,14 @@ jobs:
 
             echo "📥 Загрузка: ${NAME}"
 
-            if ! curl -sSL --fail -o "${OUT_FILE}.tmp" "${URL}"; then
-              echo "⚠️ Не удалось скачать ${URL}, пропускаем"
-              rm -f "${OUT_FILE}.tmp"
-              continue
+            if curl -sSL --fail -o "${OUT_FILE}" "${URL}"; then
+              echo "✅ ${NAME}: $(wc -l < "${OUT_FILE}") строк"
+            else
+              echo "⚠️ Не удалось скачать ${URL}"
             fi
-
-            # Очистка: убираем комментарии (#, !) и пустые строки
-            grep -v '^[[:space:]]*[#!]' "${OUT_FILE}.tmp" | \
-            grep -v '^[[:space:]]*$' | \
-            sed 's/[[:space:]]*$//' | \
-            sort -u > "${OUT_FILE}"
-
-            rm -f "${OUT_FILE}.tmp"
-            echo "✅ ${NAME}: $(wc -l < "${OUT_FILE}") строк"
           done
 
-          echo "📊 Итого файлов: $(ls -1 data/mobile/ | wc -l)"
+          echo "📊 Файлов в data/mobile/: $(ls -1 data/mobile/ 2>/dev/null | wc -l)"
 
       - name: Commit and push
         run: |
@@ -61,7 +51,7 @@ jobs:
           git add data/mobile/
 
           if ! git diff --staged --quiet; then
-            git commit -m "chore: update community lists ($(date +%Y-%m-%d))"
+            git commit -m "chore: update mobile lists ($(date +%Y-%m-%d))"
             git push origin HEAD:${{ github.ref_name }}
           else
             echo "✅ Изменений нет, пуш не требуется"
