@@ -3,3 +3,4 @@ include:./ads/mail-ads
 include:./ads/twitch-ads
 include:./mobile/huawei @ads
 include:./mobile/xiaomi @ads
+include:./mobile/oppo @ads

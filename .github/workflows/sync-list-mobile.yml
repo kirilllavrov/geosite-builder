@@ -24,6 +24,8 @@ jobs:
             "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/xiaomi|xiaomi"
             "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/xiaomi-ai|xiaomi-ai"
             "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/xiaomi-iot|xiaomi-iot"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/oppo|oppo"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/oneplus|oneplus"
           )
 
           for entry in "${SOURCES[@]}"; do
