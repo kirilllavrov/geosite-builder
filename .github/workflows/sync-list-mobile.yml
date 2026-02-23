@@ -35,7 +35,8 @@ jobs:
             "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/beats|beats"
             "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/icloud|icloud"
             "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/icloudprivaterelay|icloudprivaterelay"
-            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/itunes|itunes"            
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/itunes|itunes"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/samsung|samsung"
           )
 
           for entry in "${SOURCES[@]}"; do
