@@ -22,7 +22,7 @@ jobs:
           path: source-repo
           fetch-depth: 0
 
-      - name: Sync and process RU domains
+      - name: Sync domains to data/ru
         run: |
           cd geosite-builder
           mkdir -p data/ru
@@ -37,8 +37,16 @@ jobs:
             echo "✅ Обработан: $(basename "$file")"
           done
 
+          echo "# Auto-generated RU category list" > data/category-ru
+          echo "# Generated: $(date -Iseconds)" >> data/category-ru
+          echo "" >> data/category-ru
+          for file in data/ru/*; do
+            [ -f "$file" ] || continue
+            filename=$(basename "$file")
+            echo "include:./ru/${filename}" >> data/category-ru
+          done
+
           echo "📊 Файлов в data/ru/: $(ls -1 data/ru/ 2>/dev/null | wc -l)"
-          head -10 data/ru/* 2>/dev/null | head -10 || echo "(файлы пусты)"
 
       - name: Commit and push
         run: |
@@ -47,7 +55,7 @@ jobs:
           git config user.email "actions@github.com"
 
           git status
-          git add data/ru/
+          git add data/ru/ data/category-ru
 
           if ! git diff --staged --quiet; then
             git commit -m "chore: sync RU domains ($(date +%Y-%m-%d))"
