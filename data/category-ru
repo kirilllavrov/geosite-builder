@@ -1,5 +1,5 @@
 # Auto-generated RU category list
-# Generated: 2026-02-23T22:15:43+00:00
+# Generated: 2026-02-23T22:32:11+00:00
 
 include:ru/1c
 include:ru/1cloud
@@ -12,7 +12,6 @@ include:ru/avito
 include:ru/avru
 include:ru/beeline
 include:ru/bronevik
-include:ru/category-ru
 include:ru/cdnvideo
 include:ru/citydrive
 include:ru/csat
