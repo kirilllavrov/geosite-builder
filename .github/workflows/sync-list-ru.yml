@@ -1,0 +1,46 @@
+---
+name: Sync RU Lists
+on:
+  schedule:
+    - cron: '0 0 * * *'  # yamllint disable-line rule:truthy
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          path: geosite-builder
+
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+        with:
+          repository: kirilllavrov/RU-domain-list-for-whitelist
+          token: ${{ secrets.GH_PAT }}
+          path: source-repo
+          fetch-depth: 0
+
+      - name: Sync domains to data/ru
+        run: |
+          cd geosite-builder
+          mkdir -p data/ru
+          rm -rf data/ru/*
+          cp -r ../source-repo/domains/* data/ru/
+
+      - name: Commit and push
+        run: |
+          cd geosite-builder
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git status
+          git add data/ru/
+
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: sync RU domains ($(date +%Y-%m-%d))"
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "✅ Изменений нет, пуш не требуется"
+          fi
