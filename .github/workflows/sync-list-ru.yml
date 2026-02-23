@@ -22,17 +22,23 @@ jobs:
           path: source-repo
           fetch-depth: 0
 
-      - name: Sync domains to data/ru
+      - name: Sync and process RU domains
         run: |
           cd geosite-builder
           mkdir -p data/ru
           rm -rf data/ru/*
           cp -r ../source-repo/domains/ru/* data/ru/
 
-          # Удаляем файлы, которые не нужны в этом репозитории
           rm -f data/ru/category-ru data/ru/whitelist-ru
 
+          for file in data/ru/*; do
+            [ -f "$file" ] || continue
+            sed -i -E 's/^#[[:space:]]*([a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,})[[:space:]]*$/\1/' "$file"
+            echo "✅ Обработан: $(basename "$file")"
+          done
+
           echo "📊 Файлов в data/ru/: $(ls -1 data/ru/ 2>/dev/null | wc -l)"
+          head -10 data/ru/* 2>/dev/null | head -10 || echo "(файлы пусты)"
 
       - name: Commit and push
         run: |
