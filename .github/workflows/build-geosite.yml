@@ -65,6 +65,7 @@ jobs:
 
       - name: Convert for Mihomo/Sing-box
         run: |
+          cd builder
           go install github.com/metacubex/geo/cmd/geo@latest
           geo convert site \
             -i v2ray \
