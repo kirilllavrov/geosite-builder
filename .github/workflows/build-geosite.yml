@@ -25,19 +25,31 @@ jobs:
           git clone --depth 1 \
             https://github.com/v2fly/domain-list-community.git builder
 
-      - name: Prepare data for build
+      - name: Flatten data for builder
         run: |
           rm -rf builder/data
-          mkdir -p builder/data/ads \
-            builder/data/mobile \
-            builder/data/ru
+          mkdir -p builder/data
 
-          cp -r data/ads/* builder/data/ads/ 2>/dev/null || true
-          cp -r data/mobile/* builder/data/mobile/ 2>/dev/null || true
-          cp -r data/ru/* builder/data/ru/ 2>/dev/null || true
+          for dir in data/ru data/ads data/mobile \
+                     data/streaming data/browser; do
+            [ -d "$dir" ] || continue
+            for file in "$dir"/*; do
+              [ -f "$file" ] || continue
+              fname=$(basename "$file")
+              [[ "$fname" == category-* ]] && continue
+              cp "$file" "builder/data/$fname"
+            done
+          done
 
-          echo "📁 Структура:"
-          find builder/data -maxdepth 2 -type f | head -20
+          for cat in data/category-*; do
+            [ -f "$cat" ] || continue
+            cname=$(basename "$cat")
+            sed 's|include:[^/]*/|include:|g' "$cat" \
+              > "builder/data/$cname"
+            echo "✅ Обработан: $cname"
+          done
+
+          echo "📁 Файлов: $(ls -1 builder/data/ | wc -l)"
 
       - name: Generate geosite.dat
         run: |
@@ -51,9 +63,21 @@ jobs:
           echo "📊 Размер: $(ls -lh ./output/geosite.dat \
             | awk '{print $5}')"
 
-          # Копируем в корень репозитория для релиза
+      - name: Convert for Mihomo/Sing-box
+        run: |
+          go install github.com/metacubex/geo/cmd/geo@latest
+          geo convert site \
+            -i v2ray \
+            -o sing \
+            -f output/geosite.db \
+            ./output/geosite.dat
           mkdir -p ../output
-          cp ./output/geosite.dat ../output/geosite.dat
+          cp ./output/geosite.dat ../output/
+          cp ./output/geosite.db ../output/
+          echo "📊 geosite.dat: $(ls -lh ../output/geosite.dat \
+            | awk '{print $5}')"
+          echo "📊 geosite.db: $(ls -lh ../output/geosite.db \
+            | awk '{print $5}')"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -61,11 +85,16 @@ jobs:
           tag_name: v${{ github.run_number }}
           name: Geosite build #${{ github.run_number }}  # yamllint disable-line rule:comments
           body: |
-            Автоматическая сборка geosite.dat
+            Автоматическая сборка geosite для Mihomo/Sing-box
 
             🔄 Run: #${{ github.run_number }}
             🔗 Commit: ${{ github.sha }}
-          files: output/geosite.dat
+            📦 Форматы:
+            - geosite.dat (V2Ray/Xray)
+            - geosite.db (Sing-box/Mihomo)
+          files: |
+            output/geosite.dat
+            output/geosite.db
           fail_on_unmatched_files: true
           make_latest: true
           overwrite_files: true
