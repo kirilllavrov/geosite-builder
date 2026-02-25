@@ -13,9 +13,9 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
-      - name: Download mobile and streaming lists
+      - name: Download mobile, streaming and browser lists
         run: |
-          mkdir -p data/mobile data/streaming
+          mkdir -p data/mobile data/streaming data/browser
 
           # Mobile sources (v2fly)
           declare -a MOBILE=(
@@ -46,6 +46,14 @@ jobs:
             "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/netflix|netflix"
           )
 
+          # Browser sources (v2fly)
+          declare -a BROWSER=(
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/firefox|firefox"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/mdn|mdn"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/mozilla|mozilla"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/rust|rust"
+          )
+
           # Download mobile lists
           for entry in "${MOBILE[@]}"; do
             URL="${entry%%|*}"
@@ -72,8 +80,22 @@ jobs:
             fi
           done
 
+          # Download browser lists
+          for entry in "${BROWSER[@]}"; do
+            URL="${entry%%|*}"
+            NAME="${entry##*|}"
+            OUT_FILE="data/browser/${NAME}"
+            echo "📥 Browser: ${NAME}"
+            if curl -sSL --fail -o "${OUT_FILE}" "${URL}"; then
+              echo "✅ ${NAME}: $(wc -l < "${OUT_FILE}") строк"
+            else
+              echo "⚠️ Не удалось скачать ${NAME}"
+            fi
+          done
+
           echo "📊 Mobile: $(ls -1 data/mobile/ 2>/dev/null | wc -l) файлов"
           echo "📊 Streaming: $(ls -1 data/streaming/ 2>/dev/null | wc -l) файлов"
+          echo "📊 Browser: $(ls -1 data/browser/ 2>/dev/null | wc -l) файлов"
 
       - name: Commit and push
         run: |
@@ -81,10 +103,10 @@ jobs:
           git config user.email "actions@github.com"
 
           git status
-          git add data/mobile/ data/streaming/
+          git add data/mobile/ data/streaming/ data/browser/
 
           if ! git diff --staged --quiet; then
-            git commit -m "chore: update mobile and streaming lists ($(date +%Y-%m-%d))"
+            git commit -m "chore: update lists ($(date +%Y-%m-%d))"
             git push origin HEAD:${{ github.ref_name }}
           else
             echo "✅ Изменений нет, пуш не требуется"
