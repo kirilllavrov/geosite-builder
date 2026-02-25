@@ -1,5 +1,5 @@
 # Auto-generated RU category list
-# Generated: 2026-02-23T22:46:55+00:00
+# Generated: 2026-02-25T13:43:21+00:00
 
 include:1c
 include:1cloud
@@ -59,7 +59,6 @@ include:okko
 include:ozon
 include:playfamily
 include:pochtaru
-include:private
 include:psbank
 include:rambler
 include:rbc
