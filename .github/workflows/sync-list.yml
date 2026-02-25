@@ -1,0 +1,91 @@
+---
+name: Sync Lists
+on:
+  schedule:
+    - cron: '0 0 * * *'  # yamllint disable-line rule:truthy
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Download mobile and streaming lists
+        run: |
+          mkdir -p data/mobile data/streaming
+
+          # Mobile sources (v2fly)
+          declare -a MOBILE=(
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/huawei|huawei"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/huawei-dev|huawei-dev"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/huaweicloud|huaweicloud"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/xiaomi|xiaomi"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/xiaomi-ai|xiaomi-ai"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/xiaomi-iot|xiaomi-iot"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/apple|apple"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/apple-dev|apple-dev"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/apple-pki|apple-pki"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/apple-tvplus|apple-tvplus"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/apple-update|apple-update"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/beats|beats"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/icloud|icloud"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/icloudprivaterelay|icloudprivaterelay"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/itunes|itunes"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/oneplus|oneplus"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/oppo|oppo"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/samsung|samsung"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/swift|swift"
+          )
+
+          # Streaming sources (v2fly)
+          declare -a STREAMING=(
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/youtube|youtube"
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/netflix|netflix"
+          )
+
+          # Download mobile lists
+          for entry in "${MOBILE[@]}"; do
+            URL="${entry%%|*}"
+            NAME="${entry##*|}"
+            OUT_FILE="data/mobile/${NAME}"
+            echo "📥 Mobile: ${NAME}"
+            if curl -sSL --fail -o "${OUT_FILE}" "${URL}"; then
+              echo "✅ ${NAME}: $(wc -l < "${OUT_FILE}") строк"
+            else
+              echo "⚠️ Не удалось скачать ${NAME}"
+            fi
+          done
+
+          # Download streaming lists
+          for entry in "${STREAMING[@]}"; do
+            URL="${entry%%|*}"
+            NAME="${entry##*|}"
+            OUT_FILE="data/streaming/${NAME}"
+            echo "📥 Streaming: ${NAME}"
+            if curl -sSL --fail -o "${OUT_FILE}" "${URL}"; then
+              echo "✅ ${NAME}: $(wc -l < "${OUT_FILE}") строк"
+            else
+              echo "⚠️ Не удалось скачать ${NAME}"
+            fi
+          done
+
+          echo "📊 Mobile: $(ls -1 data/mobile/ 2>/dev/null | wc -l) файлов"
+          echo "📊 Streaming: $(ls -1 data/streaming/ 2>/dev/null | wc -l) файлов"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git status
+          git add data/mobile/ data/streaming/
+
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update mobile and streaming lists ($(date +%Y-%m-%d))"
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "✅ Изменений нет, пуш не требуется"
+          fi
