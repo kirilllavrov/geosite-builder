@@ -22,10 +22,6 @@ jobs:
           path: source-repo
           fetch-depth: 0
 
-      - name: Setup Python for IDN conversion
-        run: |
-          python3 -m pip install --quiet idna
-
       - name: Sync and process RU domains
         run: |
           cd geosite-builder
@@ -38,7 +34,7 @@ jobs:
           # Удаляем служебные файлы
           rm -f data/ru/category-ru data/ru/whitelist-ru
 
-          # Скрипт обработки: раскомментирование + punycode + валидация
+          # Раскомментируем домены + конвертация IDN в punycode
           cat > /tmp/process_domains.py << 'PYEOF'
           import sys, re
           try:
@@ -81,10 +77,10 @@ jobs:
                   print(f"❌ {filepath}: {e}", file=sys.stderr)
           PYEOF
 
-          # Обрабатываем все файлы в data/ru/
           python3 /tmp/process_domains.py data/ru/*
 
-          # Генерируем category-ru, исключая себя из списка
+          # Генерируем category-ru в корне data/ с include:filename (без пути)
+          # Исключаем: category-ru, whitelist-ru, private
           {
             echo "# Auto-generated RU category list"
             echo "# Generated: $(date -Iseconds)"
@@ -92,11 +88,13 @@ jobs:
             for file in data/ru/*; do
               [ -f "$file" ] || continue
               fname=$(basename "$file")
-              [ "$fname" = "category-ru" ] && continue
-              [ "$fname" = "whitelist-ru" ] && continue
+              # Пропускаем служебные файлы и private
+              case "$fname" in
+                category-ru|whitelist-ru|private) continue ;;
+              esac
               echo "include:$fname"
             done
-          } > data/ru/category-ru
+          } > data/category-ru
 
           echo "📊 Файлов в data/ru/: $(ls -1 data/ru/ 2>/dev/null | wc -l)"
 
@@ -107,7 +105,7 @@ jobs:
           git config user.email "actions@github.com"
 
           git status
-          git add data/ru/
+          git add data/ru/ data/category-ru
 
           if ! git diff --staged --quiet; then
             git commit -m "chore: sync RU domains ($(date +%Y-%m-%d))"
