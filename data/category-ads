@@ -1,6 +1,4 @@
-include:mail-ads
-include:twitch-ads
-include:adguarddns
+include:hagezi
 include:apple @ads
 include:xiaomi @ads
 include:youtube @ads
