@@ -2,7 +2,7 @@
 name: Sync Ads Lists
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'  # yamllint disable-line rule:truthy
   workflow_dispatch:
 
 jobs:
@@ -13,56 +13,39 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
-      - name: Download and process filter lists
+      - name: Download Hagezi DNS blocklist
         run: |
-          set +e
           mkdir -p data/ads
 
-          declare -a SOURCES=(
-            "https://adguardteam.github.io/AdguardFilters/BaseFilter/sections/adservers.txt|adservers"
-            "https://adguardteam.github.io/AdguardFilters/BaseFilter/sections/adservers_firstparty.txt|adservers_fp"
-            "https://adguardteam.github.io/AdguardFilters/MobileFilter/sections/adservers.txt|mobile_adservers"
-            "https://adguardteam.github.io/AdguardFilters/CyrillicFilters/RussianFilter/sections/adservers_firstparty.txt|ru_adservers_fp"
-            "https://raw.githubusercontent.com/easylist/easylist/master/easylist/easylist_adservers.txt|easylist_adservers"
-            "https://adguardteam.github.io/AdguardFilters/SpywareFilter/sections/tracking_servers.txt|tracking"
-            "https://adguardteam.github.io/AdguardFilters/SpywareFilter/sections/mobile.txt|tracking_mobile"
-            "https://adguardteam.github.io/AdguardFilters/BaseFilter/sections/cryptominers.txt|cryptominers"
-          )
+          URL="https://raw.githubusercontent.com/hagezi/dns-blocklists/refs/heads/main/domains/pro.txt"
+          OUT_FILE="data/ads/hagezi"
 
-          TEMP_ALL=$(mktemp)
+          echo "📥 Downloading Hagezi Pro list..."
+          if curl -sSL --fail -o "${OUT_FILE}" "${URL}"; then
+            lines=$(wc -l < "${OUT_FILE}")
+            echo "✅ Hagezi: ${lines} доменов"
+          else
+            echo "❌ Не удалось скачать Hagezi Pro list"
+            exit 1
+          fi
 
-          for entry in "${SOURCES[@]}"; do
-            URL="${entry%%|*}"
-            NAME="${entry##*|}"
-            TMP_FILE="data/ads/tmp_${NAME}.txt"
+          rm -f data/ads/adguarddns
 
-            echo "📥 Обработка: $NAME"
+          echo "📁 Файлов в data/ads/:"
+          ls -1 data/ads/
 
-            if ! curl -sSL --fail -o "$TMP_FILE" "$URL"; then
-              echo "⚠️ Не удалось скачать $URL, пропускаем"
-              continue
-            fi
-
-            grep -v '^!' "$TMP_FILE" | \
-            grep -v '^$' | \
-            sed 's/||/\n/g; s/\^.*//' | \
-            sed 's/^\*\.//; s/^\*-//; s/^\*//; s/\.\*//; s/\*$//' | \
-            grep -v '^$' | \
-            grep -vE '^([0-9]{1,3}\.){3}[0-9]{1,3}' | \
-            grep -iE '^[a-z0-9]([a-z0-9.-]*\.)+[a-z]{2,}$' | \
-            sed 's/^0\.//' >> "$TEMP_ALL" || true
-
-            rm -f "$TMP_FILE"
-          done
-
-          sort -u "$TEMP_ALL" > data/ads/adguarddns
-          rm -f "$TEMP_ALL"
-
-          echo "✅ Готово"
-          echo "Всего уникальных доменов: $(wc -l < data/ads/adguarddns)"
-          echo "Размер: $(ls -lh data/ads/adguarddns | awk '{print $5}')"
-          echo "Пример (первые 10):"
-          head -10 data/ads/adguarddns
+      - name: Update category-ads
+        run: |
+          if [ -f data/category-ads ]; then
+            sed -i 's|include:ads/adguarddns|include:ads/hagezi|g' data/category-ads
+            sed -i 's|include:adguarddns|include:hagezi|g' data/category-ads
+            echo "✅ Обновлён data/category-ads"
+            echo "Содержимое:"
+            cat data/category-ads
+          else
+            echo "⚠️ data/category-ads не найден, создаём..."
+            echo "include:ads/hagezi" > data/category-ads
+          fi
 
       - name: Commit and push
         run: |
@@ -70,10 +53,10 @@ jobs:
           git config user.email "actions@github.com"
 
           git status
-          git add data/ads/adguarddns
+          git add data/ads/ data/category-ads
 
           if ! git diff --staged --quiet; then
-            git commit -m "chore: update AdGuardDNS filter ($(date +%Y-%m-%d))"
+            git commit -m "chore: switch to Hagezi ($(date +%Y-%m-%d))"
             git push origin HEAD:${{ github.ref_name }}
           else
             echo "✅ Изменений нет, пуш не требуется"
