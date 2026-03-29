@@ -31,7 +31,6 @@ jobs:
           mkdir -p builder/data
 
           # Шаг 1: копируем только непустые файлы доменов
-          # и сохраняем список валидных имён
           > /tmp/valid_lists.txt
           for dir in data/ru data/ads data/mobile \
                      data/streaming data/browser; do
@@ -41,41 +40,40 @@ jobs:
               fname=$(basename "$file")
               [[ "$fname" == category-* ]] && continue
               
-              # Проверяем, есть ли в файле валидные домены
               if grep -qE '^[a-zA-Z0-9]' "$file" 2>/dev/null; then
                 cp "$file" "builder/data/$fname"
                 echo "$fname" >> /tmp/valid_lists.txt
               else
-                echo "⚠️ Пропущен (пустой): $fname"
+                echo "⚠️ Пропущен (пустой): $fname" >&2
               fi
             done
           done
 
-          # Шаг 2: обрабатываем category-файлы, оставляя только валидные include:
+          # Шаг 2: обрабатываем category-файлы
           for cat in data/category-*; do
             [ -f "$cat" ] || continue
             cname=$(basename "$cat")
             
-            # Фильтруем include: — оставляем только те, что в валидном списке
+            # Фильтруем include: — только валидные списки
             {
+              # Копируем комментарии
               grep '^#' "$cat" 2>/dev/null || true
               echo ""
+              # Обрабатываем include:
               grep '^include:' "$cat" 2>/dev/null | while read -r line; do
-                # Извлекаем имя списка из include:PATH/NAME или include:NAME
                 inc_name=$(echo "$line" | sed 's|include:.*\/||; s|include:||')
                 if grep -qx "$inc_name" /tmp/valid_lists.txt 2>/dev/null; then
-                  # Убираем путь из include:ru/name → include:name
                   echo "$line" | sed 's|include:[^/]*/|include:|'
                 else
-                  echo "⚠️ Исключён из $cname: $inc_name"
+                  echo "⚠️ Исключён из $cname: $inc_name" >&2
                 fi
               done
             } > "builder/data/$cname"
             
-            echo "✅ Обработан: $cname"
+            echo "✅ Обработан: $cname" >&2
           done
 
-          echo "📁 Файлов в builder/data/: $(ls -1 builder/data/ | wc -l)"
+          echo "📁 Файлов в builder/data/: $(ls -1 builder/data/ | wc -l)" >&2
 
       - name: Generate geosite.dat
         run: |
