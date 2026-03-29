@@ -30,6 +30,7 @@ jobs:
           rm -rf builder/data
           mkdir -p builder/data
 
+          # Копируем файлы доменов, пропуская пустые и category-*
           for dir in data/ru data/ads data/mobile \
                      data/streaming data/browser; do
             [ -d "$dir" ] || continue
@@ -37,10 +38,18 @@ jobs:
               [ -f "$file" ] || continue
               fname=$(basename "$file")
               [[ "$fname" == category-* ]] && continue
-              cp "$file" "builder/data/$fname"
+              
+              # Пропускаем пустые файлы или файлы только с комментариями
+              if grep -qE '^[a-zA-Z0-9]' "$file" 2>/dev/null; then
+                cp "$file" "builder/data/$fname"
+                echo "✅ Копирован: $fname"
+              else
+                echo "⚠️ Пропущен (пустой): $fname"
+              fi
             done
           done
 
+          # Правим category-файлы: убираем пути из include:
           for cat in data/category-*; do
             [ -f "$cat" ] || continue
             cname=$(basename "$cat")
@@ -49,7 +58,7 @@ jobs:
             echo "✅ Обработан: $cname"
           done
 
-          echo "📁 Файлов: $(ls -1 builder/data/ | wc -l)"
+          echo "📁 Файлов в builder/data/: $(ls -1 builder/data/ | wc -l)"
 
       - name: Generate geosite.dat
         run: |
