@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
 
 env:
-  # Opt into Node.js 24 for JavaScript actions
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -24,7 +23,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-          cache: false  # Отключаем авто-кэш, т.к. проект в builder/
+          cache: false
 
       - name: Clone v2fly builder
         run: |
@@ -62,8 +61,7 @@ jobs:
               grep '^#' "$cat" 2>/dev/null || true
               echo ""
               grep '^include:' "$cat" 2>/dev/null | while read -r line; do
-                inc_name=$(echo "$line" \
-                  | sed 's|include:.*/||; s|include:||')
+                inc_name=$(echo "$line" | sed 's|include:.*/||; s|include:||')
                 if grep -qx "$inc_name" /tmp/valid_lists.txt 2>/dev/null; then
                   echo "$line" | sed 's|include:[^/]*/|include:|'
                 else
@@ -80,31 +78,23 @@ jobs:
       - name: Generate geosite.dat
         run: |
           cd builder
-          if ! go run ./ --datapath=./data \
-            --outputdir=./output; then
+          if ! go run ./ --datapath=./data --outputdir=./output; then
             echo "❌ Ошибка сборки"
             exit 1
           fi
           mv ./output/dlc.dat ./output/geosite.dat
-          echo "📊 Размер: $(ls -lh ./output/geosite.dat \
-            | awk '{print $5}')"
+          echo "📊 Размер: $(ls -lh ./output/geosite.dat | awk '{print $5}')"
 
       - name: Convert for Mihomo/Sing-box
         run: |
           cd builder
           go install github.com/metacubex/geo/cmd/geo@latest
-          geo convert site \
-            -i v2ray \
-            -o sing \
-            -f output/geosite.db \
-            ./output/geosite.dat
+          geo convert site -i v2ray -o sing -f output/geosite.db ./output/geosite.dat
           mkdir -p ../output
           cp ./output/geosite.dat ../output/
           cp ./output/geosite.db ../output/
-          echo "📊 geosite.dat: $(ls -lh ../output/geosite.dat \
-            | awk '{print $5}')" >&2
-          echo "📊 geosite.db: $(ls -lh ../output/geosite.db \
-            | awk '{print $5}')" >&2
+          echo "📊 geosite.dat: $(ls -lh ../output/geosite.dat | awk '{print $5}')" >&2
+          echo "📊 geosite.db: $(ls -lh ../output/geosite.db | awk '{print $5}')" >&2
 
       - name: Publish to release branch
         run: |
