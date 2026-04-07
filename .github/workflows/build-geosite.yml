@@ -103,7 +103,12 @@ jobs:
 
       - name: Publish to release branch
         run: |
-          # Настраиваем git для работы с веткой release
+          # Сохраняем файлы во временную директорию ДО работы с git
+          mkdir -p /tmp/geosite-release
+          cp output/geosite.dat /tmp/geosite-release/ 2>/dev/null || true
+          cp output/geosite.db /tmp/geosite-release/ 2>/dev/null || true
+
+          # Настраиваем git
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
@@ -116,10 +121,9 @@ jobs:
             git checkout release
           fi
 
-          # Копируем файлы в ветку release
-          mkdir -p ./
-          cp ../output/geosite.dat ./geosite.dat
-          cp ../output/geosite.db ./geosite.db
+          # Копируем файлы из /tmp в ветку release
+          cp /tmp/geosite-release/geosite.dat ./geosite.dat 2>/dev/null || true
+          cp /tmp/geosite-release/geosite.db ./geosite.db 2>/dev/null || true
 
           # Коммитим и пушим
           git add geosite.dat geosite.db
