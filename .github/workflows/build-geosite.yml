@@ -14,6 +14,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -30,7 +31,6 @@ jobs:
           rm -rf builder/data
           mkdir -p builder/data
 
-          # Шаг 1: копируем только непустые файлы доменов
           > /tmp/valid_lists.txt
           for dir in data/ru data/ads data/mobile \
                      data/streaming data/browser; do
@@ -39,7 +39,7 @@ jobs:
               [ -f "$file" ] || continue
               fname=$(basename "$file")
               [[ "$fname" == category-* ]] && continue
-              
+
               if grep -qE '^[a-zA-Z0-9]' "$file" 2>/dev/null; then
                 cp "$file" "builder/data/$fname"
                 echo "$fname" >> /tmp/valid_lists.txt
@@ -49,19 +49,16 @@ jobs:
             done
           done
 
-          # Шаг 2: обрабатываем category-файлы
           for cat in data/category-*; do
             [ -f "$cat" ] || continue
             cname=$(basename "$cat")
-            
-            # Фильтруем include: — только валидные списки
+
             {
-              # Копируем комментарии
               grep '^#' "$cat" 2>/dev/null || true
               echo ""
-              # Обрабатываем include:
               grep '^include:' "$cat" 2>/dev/null | while read -r line; do
-                inc_name=$(echo "$line" | sed 's|include:.*\/||; s|include:||')
+                inc_name=$(echo "$line" \
+                  | sed 's|include:.*/||; s|include:||')
                 if grep -qx "$inc_name" /tmp/valid_lists.txt 2>/dev/null; then
                   echo "$line" | sed 's|include:[^/]*/|include:|'
                 else
@@ -69,11 +66,11 @@ jobs:
                 fi
               done
             } > "builder/data/$cname"
-            
+
             echo "✅ Обработан: $cname" >&2
           done
 
-          echo "📁 Файлов в builder/data/: $(ls -1 builder/data/ | wc -l)" >&2
+          echo "📁 Файлов: $(ls -1 builder/data/ | wc -l)" >&2
 
       - name: Generate geosite.dat
         run: |
@@ -100,9 +97,42 @@ jobs:
           cp ./output/geosite.dat ../output/
           cp ./output/geosite.db ../output/
           echo "📊 geosite.dat: $(ls -lh ../output/geosite.dat \
-            | awk '{print $5}')"
+            | awk '{print $5}')" >&2
           echo "📊 geosite.db: $(ls -lh ../output/geosite.db \
-            | awk '{print $5}')"
+            | awk '{print $5}')" >&2
+
+      - name: Publish to release branch
+        run: |
+          # Настраиваем git для работы с веткой release
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          # Создаём/обновляем ветку release
+          if ! git ls-remote --exit-code origin release >/dev/null 2>&1; then
+            git checkout -b release
+            git push -u origin release
+          else
+            git fetch origin release
+            git checkout release
+          fi
+
+          # Копируем файлы в ветку release
+          mkdir -p ./
+          cp ../output/geosite.dat ./geosite.dat
+          cp ../output/geosite.db ./geosite.db
+
+          # Коммитим и пушим
+          git add geosite.dat geosite.db
+          if ! git diff --staged --quiet; then
+            git commit -m "build: update geosite files ($(date +%Y-%m-%d))"
+            git push origin release
+            echo "✅ Опубликовано в ветку release" >&2
+          else
+            echo "✅ Файлы без изменений" >&2
+          fi
+
+          # Возвращаемся на основную ветку
+          git checkout -
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -117,6 +147,15 @@ jobs:
             📦 Форматы:
             - geosite.dat (V2Ray/Xray)
             - geosite.db (Sing-box/Mihomo)
+
+            🌐 jsDelivr CDN:
+            ```
+            # V2Ray/Xray
+            https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.dat
+
+            # Mihomo/Sing-box
+            https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.db
+            ```
           files: |
             output/geosite.dat
             output/geosite.db
