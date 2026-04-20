@@ -1,8 +1,7 @@
----
 name: Sync RU Lists
-on:
+on: # yamllint disable-line rule:truthy
   schedule:
-    - cron: "0 0 * * *" # yamllint disable-line rule:truthy
+    - cron: '0 0 * * *'  # yamllint disable-line rule:truthy
   workflow_dispatch:
 
 jobs:
@@ -27,60 +26,68 @@ jobs:
           cd geosite-builder
           mkdir -p data/ru
 
-          # Копируем файлы из нового пути в исходном репозитории
+          # Очистка целевой директории
           rm -rf data/ru/*
-          cp -r ../source-repo/src/domains/* data/ru/
+
+          # Копирование и переименование: category-*.ru → *.ru
+          for src_file in ../source-repo/src/domains/*; do
+            [ -f "$src_file" ] || continue
+            fname=$(basename "$src_file")
+            new_name="${fname#category-}"
+            cp "$src_file" "data/ru/$new_name"
+            echo "📄 $fname → $new_name"
+          done
 
           # Удаляем служебные файлы
           rm -f data/ru/category-ru data/ru/whitelist-ru
 
-          # Раскомментируем домены + конвертация IDN в punycode
+          # Скрипт обработки доменов
           cat > /tmp/process_domains.py << 'PYEOF'
-          import sys, re
-          try:
-              import idna
-          except ImportError:
-              print("❌ idna library not installed", file=sys.stderr)
-              sys.exit(1)
+import sys, re
+try:
+    import idna
+except ImportError:
+    print("❌ idna library not installed", file=sys.stderr)
+    sys.exit(1)
 
-          def to_punycode(domain):
-              try:
-                  return idna.encode(domain, uts46=True).decode('ascii').lower()
-              except:
-                  return None
+def to_punycode(domain):
+    try:
+        return idna.encode(domain, uts46=True).decode('ascii').lower()
+    except Exception:
+        return None
 
-          def is_valid_ascii_domain(d):
-              return bool(re.match(
-                  r'^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$', d))
+def is_valid_ascii_domain(d):
+    return bool(re.match(r'^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$', d))
 
-          for filepath in sys.argv[1:]:
-              try:
-                  with open(filepath, 'r', encoding='utf-8') as f:
-                      lines = f.readlines()
-                  result = []
-                  for line in lines:
-                      line = line.strip()
-                      if not line or line.startswith('#'):
-                          continue
-                      if line.startswith('#'):
-                          line = line[1:].strip()
-                      if any(ord(c) > 127 for c in line):
-                          converted = to_punycode(line)
-                          if converted and is_valid_ascii_domain(converted):
-                              result.append(converted)
-                      elif is_valid_ascii_domain(line.lower()):
-                          result.append(line.lower())
-                  with open(filepath, 'w', encoding='utf-8') as f:
-                      f.write('\n'.join(result) + '\n' if result else '')
-                  print(f"✅ {filepath}: {len(result)} доменов")
-              except Exception as e:
-                  print(f"❌ {filepath}: {e}", file=sys.stderr)
-          PYEOF
+for filepath in sys.argv[1:]:
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        result = []
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith('#'):
+                line = line[1:].strip()
+            if not line:
+                continue
+            if any(ord(c) > 127 for c in line):
+                converted = to_punycode(line)
+                if converted and is_valid_ascii_domain(converted):
+                    result.append(converted)
+            elif is_valid_ascii_domain(line.lower()):
+                result.append(line.lower())
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(result) + '\n' if result else '')
+        print(f"✅ {filepath}: {len(result)} доменов")
+    except Exception as e:
+        print(f"❌ {filepath}: {e}", file=sys.stderr)
+PYEOF
 
           python3 /tmp/process_domains.py data/ru/*
 
-          # Генерируем category-ru в корне data/ с include:filename (без пути)
-          # Исключаем: category-ru, whitelist-ru, private
+          # Генерируем category-ru
           {
             echo "# Auto-generated RU category list"
             echo "# Generated: $(date -Iseconds)"
@@ -88,7 +95,6 @@ jobs:
             for file in data/ru/*; do
               [ -f "$file" ] || continue
               fname=$(basename "$file")
-              # Пропускаем служебные файлы и private
               case "$fname" in
                 category-ru|whitelist-ru|private) continue ;;
               esac
@@ -97,6 +103,8 @@ jobs:
           } > data/category-ru
 
           echo "📊 Файлов в data/ru/: $(ls -1 data/ru/ 2>/dev/null | wc -l)"
+          echo "📋 Содержимое category-ru:"
+          cat data/category-ru
 
       - name: Commit and push
         run: |
