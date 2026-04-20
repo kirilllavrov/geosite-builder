@@ -2,7 +2,7 @@
 name: Build Geosite
 on:
   schedule:
-    - cron: '0 2 * * *'  # yamllint disable-line rule:truthy
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
 env:
@@ -37,7 +37,7 @@ jobs:
 
           > /tmp/valid_lists.txt
           for dir in data/ru data/ads data/mobile \
-                     data/streaming data/browser; do
+                     data/streaming data/browser data/cdn; do
             [ -d "$dir" ] || continue
             for file in "$dir"/*; do
               [ -f "$file" ] || continue
@@ -131,7 +131,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
-          name: Geosite build #${{ github.run_number }}  # yamllint disable-line rule:comments
+          name: Geosite build #${{ github.run_number }}
           body: |
             Автоматическая сборка geosite для Mihomo/Sing-box
 
