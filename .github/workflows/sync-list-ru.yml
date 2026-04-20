@@ -2,7 +2,7 @@
 name: Sync RU Lists
 on:
   schedule:
-    - cron: '0 0 * * *'  # yamllint disable-line rule:truthy
+    - cron: "0 0 * * *" # yamllint disable-line rule:truthy
   workflow_dispatch:
 
 jobs:
@@ -17,7 +17,7 @@ jobs:
       - name: Checkout source repo
         uses: actions/checkout@v4
         with:
-          repository: kirilllavrov/RU-domain-list-for-whitelist
+          repository: kirilllavrov/whitelists
           token: ${{ secrets.GH_PAT }}
           path: source-repo
           fetch-depth: 0
@@ -27,9 +27,9 @@ jobs:
           cd geosite-builder
           mkdir -p data/ru
 
-          # Копируем файлы из исходного репозитория
+          # Копируем файлы из нового пути в исходном репозитории
           rm -rf data/ru/*
-          cp -r ../source-repo/domains/ru/* data/ru/
+          cp -r ../source-repo/src/domains/* data/ru/
 
           # Удаляем служебные файлы
           rm -f data/ru/category-ru data/ru/whitelist-ru
