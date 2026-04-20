@@ -1,4 +1,3 @@
----
 name: Sync Ads Lists
 on:
   schedule:
@@ -29,9 +28,7 @@ jobs:
             exit 1
           fi
 
-          rm -f data/ads/adguarddns
-
-          echo "📁 Файлов в data/ads/:"
+          echo "📁 Файлов в data/ads/: "
           ls -1 data/ads/
 
       - name: Update category-ads
@@ -40,10 +37,10 @@ jobs:
             sed -i 's|include:ads/adguarddns|include:ads/hagezi|g' data/category-ads
             sed -i 's|include:adguarddns|include:hagezi|g' data/category-ads
             echo "✅ Обновлён data/category-ads"
-            echo "Содержимое:"
+            echo "Содержимое: "
             cat data/category-ads
           else
-            echo "⚠️ data/category-ads не найден, создаём..."
+            echo "⚠️ data/category-ads не найден, создаём... "
             echo "include:ads/hagezi" > data/category-ads
           fi
 
