@@ -1,15 +1,16 @@
 # Auto-generated RU category list
-# Generated: 2026-04-20T21:33:55+00:00
+# Generated: 2026-04-20T22:32:44+00:00
 
-include:category-bank-ru
-include:category-delivery-ru
-include:category-developer-ru
-include:category-ecommerce-ru
-include:category-gov-ru
-include:category-logistics-ru
-include:category-media-ru
-include:category-retail-ru
-include:category-services-ru
-include:category-social-media-ru
-include:category-streaming-ru
-include:category-telecom-ru
+include:bank-ru
+include:delivery-ru
+include:developer-ru
+include:ecommerce-ru
+include:gov-ru
+include:logistics-ru
+include:media-ru
+include:retail-ru
+include:ru
+include:services-ru
+include:social-media-ru
+include:streaming-ru
+include:telecom-ru
