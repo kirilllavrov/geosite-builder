@@ -15,7 +15,7 @@ jobs:
 
       - name: Download mobile, streaming and browser lists
         run: |
-          mkdir -p data/mobile data/streaming data/browser
+          mkdir -p data/mobile data/streaming data/browser data/private
 
           # Mobile sources (v2fly)
           declare -a MOBILE=(
@@ -122,7 +122,7 @@ jobs:
           git config user.email "actions@github.com"
 
           git status
-          git add data/mobile/ data/streaming/ data/browser/
+          git add data/mobile/ data/streaming/ data/browser/ data/private/
 
           if ! git diff --staged --quiet; then
             git commit -m "chore: update lists ($(date +%Y-%m-%d))"
