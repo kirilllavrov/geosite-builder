@@ -2,8 +2,10 @@ name: Generate Categories
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [generate-categories]
   schedule:
-    - cron: "15 0 * * *"   # каждый день в 01:00
+    - cron: "15 0 * * *"
 
 jobs:
   generate:
@@ -12,11 +14,10 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.GH_PAT }}
-          fetch-depth: 0
+          ref: main
 
       - name: Generate category-* files
         run: |
@@ -26,9 +27,9 @@ jobs:
             [ -d "$dir" ] || continue
             category=$(basename "$dir")
 
-            # Категория private — особая, её НЕ генерируем
+            # Особый случай
             if [[ "$category" == "private" ]]; then
-              echo "⚠️ Skipping category-private (special case)"
+              echo "⚠️ Skipping private"
               continue
             fi
 
@@ -48,16 +49,10 @@ jobs:
             echo "✅ Generated $category_file"
           done
 
-      - name: Commit changes
+      - name: Commit
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-
           git add data/category-*
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: auto-generate category files ($(date +%Y-%m-%d))"
-            git push origin HEAD:${{ github.ref_name }}
-            echo "📦 Categories updated"
-          else
-            echo "✅ No changes"
-          fi
+          git commit -m "chore: auto-generate categories ($(date +%Y-%m-%d))" || true
+          git push origin HEAD:${{ github.ref_name }} || true
