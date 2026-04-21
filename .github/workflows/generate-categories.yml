@@ -21,18 +21,16 @@ jobs:
         run: |
           echo "🔧 Universal Category Generator"
 
-          # === Generate categories for all directories except private.d ===
           for dir in data/*; do
             [ -d "$dir" ] || continue
             category=$(basename "$dir")
 
-            # Пропускаем private.d — он обрабатывается отдельно
+            # === Skip special cases ===
             if [[ "$category" == "private.d" ]]; then
               echo "⚠️ Skipping private.d (special case)"
               continue
             fi
 
-            # Пропускаем директорию private (если вдруг появится)
             if [[ "$category" == "private" ]]; then
               echo "⚠️ Skipping private (special case)"
               continue
@@ -52,7 +50,7 @@ jobs:
             } > "$category_file"
 
             echo "✅ Generated $category_file"
-          done
+                    done
 
           # === Special case: private ===
           if [ -f data/private.d/private ]; then
@@ -67,6 +65,7 @@ jobs:
           else
             echo "⚠️ No private list found in data/private.d/, skipping category private"
           fi
+
 
       - name: Commit
         run: |
