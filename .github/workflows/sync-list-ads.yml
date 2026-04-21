@@ -16,7 +16,7 @@ jobs:
         run: |
           mkdir -p data/ads
 
-          URL="https://raw.githubusercontent.com/hagezi/dns-blocklists/refs/heads/main/domains/pro.txt"
+          URL="https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/light.txt"
           OUT_FILE="data/ads/hagezi"
 
           echo "📥 Downloading Hagezi Pro list..."
