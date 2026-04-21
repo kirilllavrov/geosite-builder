@@ -31,28 +31,51 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/v2fly/domain-list-community.git builder
 
-      - name: Flatten data for builder
+      - name: Flatten data for builder (AUTO-DETECT DIRECTORIES)
         run: |
           rm -rf builder/data
           mkdir -p builder/data
 
-          > /tmp/valid_lists.txt
-          for dir in data/ru data/ads data/mobile data/streaming data/browser data/cdn; do
+          echo "🔍 Detecting data directories..."
+          DATA_DIRS=()
+
+          for dir in data/*; do
             [ -d "$dir" ] || continue
+            base=$(basename "$dir")
+
+            case "$base" in
+              private) continue ;;      # private — особый случай
+              category-*) continue ;;   # пропускаем category-* директории
+            esac
+
+            DATA_DIRS+=("$dir")
+          done
+
+          echo "📁 Found directories:"
+          printf ' - %s\n' "${DATA_DIRS[@]}"
+
+          > /tmp/valid_lists.txt
+
+          for dir in "${DATA_DIRS[@]}"; do
             for file in "$dir"/*; do
               [ -f "$file" ] || continue
               fname=$(basename "$file")
+
               [[ "$fname" == category-* ]] && continue
 
               if grep -qE '^[a-zA-Z0-9]' "$file" 2>/dev/null; then
                 cp "$file" "builder/data/$fname"
                 echo "$fname" >> /tmp/valid_lists.txt
               else
-                echo "⚠️ Пропущен (пустой): $fname" >&2
+                echo "⚠️ Пропущен (пустой): $fname"
               fi
             done
           done
 
+          echo "📄 Valid lists:"
+          cat /tmp/valid_lists.txt
+
+          echo "🔧 Processing category-* files..."
           for cat in data/category-*; do
             [ -f "$cat" ] || continue
             cname=$(basename "$cat")
@@ -60,20 +83,21 @@ jobs:
             {
               grep '^#' "$cat" 2>/dev/null || true
               echo ""
-              grep '^include:' "$cat" 2>/dev/null | while read -r line; do
+              grep '^include:' "$cat" | while read -r line; do
                 inc_name=$(echo "$line" | sed 's|include:.*/||; s|include:||')
-                if grep -qx "$inc_name" /tmp/valid_lists.txt 2>/dev/null; then
+                if grep -qx "$inc_name" /tmp/valid_lists.txt; then
                   echo "$line" | sed 's|include:[^/]*/|include:|'
                 else
-                  echo "⚠️ Исключён из $cname: $inc_name" >&2
+                  echo "⚠️ Исключён из $cname: $inc_name"
                 fi
               done
             } > "builder/data/$cname"
 
-            echo "✅ Обработан: $cname" >&2
+            echo "✅ Processed: $cname"
           done
 
-          echo "📁 Файлов: $(ls -1 builder/data/ | wc -l)" >&2
+          echo "📁 Total files in builder/data:"
+          ls -1 builder/data | wc -l
 
       - name: Generate geosite.dat
         run: |
@@ -93,12 +117,11 @@ jobs:
           mkdir -p ../output
           cp ./output/geosite.dat ../output/
           cp ./output/geosite.db ../output/
-          echo "📊 geosite.dat: $(ls -lh ../output/geosite.dat | awk '{print $5}')" >&2
-          echo "📊 geosite.db: $(ls -lh ../output/geosite.db | awk '{print $5}')" >&2
+          echo "📊 geosite.dat: $(ls -lh ../output/geosite.dat | awk '{print $5}')"
+          echo "📊 geosite.db: $(ls -lh ../output/geosite.db | awk '{print $5}')"
 
       - name: Publish to release branch
         run: |
-          # Сохраняем артефакты
           mkdir -p /tmp/geosite-release
           cp output/geosite.dat /tmp/geosite-release/geosite.dat
           cp output/geosite.db /tmp/geosite-release/geosite.db
@@ -108,7 +131,6 @@ jobs:
 
           git fetch origin
 
-          # Создаём или переключаемся на release
           if git show-ref --verify --quiet refs/heads/release; then
             git checkout release
           elif git show-ref --verify --quiet refs/remotes/origin/release; then
@@ -117,11 +139,9 @@ jobs:
             git checkout --orphan release
           fi
 
-          # Полностью очищаем ветку release
           git rm -rf . >/dev/null 2>&1 || true
           git clean -fdx
 
-          # Кладём только геофайлы
           cp /tmp/geosite-release/geosite.dat ./geosite.dat
           cp /tmp/geosite-release/geosite.db ./geosite.db
 
@@ -130,10 +150,10 @@ jobs:
           if ! git diff --staged --quiet; then
             git commit -m "build: update geosite files ($(date +%Y-%m-%d))"
             git push origin HEAD:release --force
-            echo "✅ Опубликовано в ветку release" >&2
           else
-            echo "✅ Файлы без изменений" >&2
+            echo "✅ Файлы без изменений"
           fi
+
       - name: Restore files for GitHub Release
         run: |
           mkdir -p output
@@ -176,11 +196,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git status
           git add data/
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: sync source data ($(date +%Y-%m-%d))"
-            git push origin HEAD:${{ github.ref_name }}
-          else
-            echo "✅ Исходники без изменений"
-          fi
+          git commit -m "chore: sync source data ($(date +%Y-%m-%d))" || true
+          git push origin HEAD:${{ github.ref_name }} || true
