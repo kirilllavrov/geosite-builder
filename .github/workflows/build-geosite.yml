@@ -139,7 +139,7 @@ jobs:
           mkdir -p output
           cp /tmp/geosite-release/geosite.dat output/geosite.dat
           cp /tmp/geosite-release/geosite.db output/geosite.db
-          
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -167,6 +167,10 @@ jobs:
           overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+      - name: Return to main branch
+        run: |
+          git checkout main
 
       - name: Commit source changes
         run: |
