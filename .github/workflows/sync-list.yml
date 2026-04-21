@@ -102,7 +102,7 @@ jobs:
           for entry in "${PRIVATE[@]}"; do
             URL="${entry%%|*}"
             NAME="${entry##*|}"
-            OUT_FILE="data/private/${NAME}"
+            OUT_FILE="data/private.d/${NAME}"
             echo "📥 Private: ${NAME}"
             if curl -sSL --fail -o "${OUT_FILE}" "${URL}"; then
               echo "✅ ${NAME}: $(wc -l < "${OUT_FILE}") строк"
