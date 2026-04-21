@@ -31,15 +31,16 @@ jobs:
 
           # Копирование и переименование: category-*.ru → *.ru
           for src_file in ../source-repo/src/domains/*; do
-            [ -f "$src_file" ] || continue
-            fname=$(basename "$src_file")
-            new_name="${fname#category-}"
-            cp "$src_file" "data/ru/$new_name"
-            echo "📄 $fname → $new_name"
-          done
+              [ -f "$src_file" ] || continue
+              fname=$(basename "$src_file")
 
-          # Удаляем служебные файлы
-          rm -f data/ru/category-ru data/ru/whitelist-ru
+              # Пропускаем category-ru
+              [[ "$fname" == "category-ru" ]] && continue
+
+              new_name="${fname#category-}"
+              cp "$src_file" "data/ru/$new_name"
+              echo "📄 $fname → $new_name"
+          done
 
           # Скрипт обработки доменов
           cat > /tmp/process_domains.py << 'PYEOF'
