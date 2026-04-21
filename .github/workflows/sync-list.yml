@@ -15,7 +15,7 @@ jobs:
 
       - name: Download mobile, streaming, private and browser lists
         run: |
-          mkdir -p data/mobile data/streaming data/browser data/private.d
+          mkdir -p data/mobile data/streaming data/browser data/private.d data/games
 
           # Mobile sources (v2fly)
           declare -a MOBILE=(
@@ -54,9 +54,14 @@ jobs:
             "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/rust|rust"
           )
 
-          # Browser sources (v2fly)
+          # Private (v2fly)
           declare -a PRIVATE=(
             "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/private|private"
+          )
+
+          # Games (v2fly)
+          declare -a GAME=(
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/refs/heads/master/data/supercell|supercell"
           )
 
           # Download mobile lists
@@ -111,16 +116,30 @@ jobs:
             fi
           done
 
+          # Download games lists
+          for entry in "${GAME[@]}"; do
+            URL="${entry%%|*}"
+            NAME="${entry##*|}"
+            OUT_FILE="data/games/${NAME}"
+            echo "📥 Games: ${NAME}"
+            if curl -sSL --fail -o "${OUT_FILE}" "${URL}"; then
+              echo "✅ ${NAME}: $(wc -l < "${OUT_FILE}") строк"
+            else
+              echo "⚠️ Не удалось скачать ${NAME}"
+            fi
+          done
+
           echo "📊 Mobile: $(ls -1 data/mobile/ 2>/dev/null | wc -l) файлов"
           echo "📊 Streaming: $(ls -1 data/streaming/ 2>/dev/null | wc -l) файлов"
           echo "📊 Browser: $(ls -1 data/browser/ 2>/dev/null | wc -l) файлов"
           echo "📊 Private: $(ls -1 data/private.d/ 2>/dev/null | wc -l) файлов"
+          echo "📊 Games: $(ls -1 data/games/ 2>/dev/null | wc -l) файлов"
 
       - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add data/mobile/ data/streaming/ data/browser/ data/private.d/
+          git add data/mobile/ data/streaming/ data/browser/ data/private.d/ data/games/
           git commit -m "chore: update lists ($(date +%Y-%m-%d))" || true
           git push origin HEAD:${{ github.ref_name }} || true
 
