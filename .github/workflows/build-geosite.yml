@@ -134,7 +134,12 @@ jobs:
           else
             echo "✅ Файлы без изменений" >&2
           fi
-
+      - name: Restore files for GitHub Release
+        run: |
+          mkdir -p output
+          cp /tmp/geosite-release/geosite.dat output/geosite.dat
+          cp /tmp/geosite-release/geosite.db output/geosite.db
+          
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
