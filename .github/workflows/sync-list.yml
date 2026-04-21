@@ -15,7 +15,7 @@ jobs:
 
       - name: Download mobile, streaming, private and browser lists
         run: |
-          mkdir -p data/mobile data/streaming data/browser data/private
+          mkdir -p data/mobile data/streaming data/browser data/private.d
 
           # Mobile sources (v2fly)
           declare -a MOBILE=(
