@@ -13,9 +13,37 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           ref: main
 
-      - name: Download Hagezi
+      - name: Download Hagezi DNS blocklist
         run: |
-          ... (твой код)
+          mkdir -p data/ads
+
+          URL="https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/light.txt"
+          OUT_FILE="data/ads/hagezi"
+
+          echo "📥 Downloading Hagezi Pro list..."
+          if curl -sSL --fail -o "${OUT_FILE}" "${URL}"; then
+            lines=$(wc -l < "${OUT_FILE}")
+            echo "✅ Hagezi: ${lines} доменов"
+          else
+            echo "❌ Не удалось скачать Hagezi Pro list"
+            exit 1
+          fi
+
+          echo "📁 Файлов в data/ads/: "
+          ls -1 data/ads/
+
+      - name: Update category-ads
+        run: |
+          if [ -f data/category-ads ]; then
+            sed -i 's|include:ads/adguarddns|include:ads/hagezi|g' data/category-ads
+            sed -i 's|include:adguarddns|include:hagezi|g' data/category-ads
+            echo "✅ Обновлён data/category-ads"
+            echo "Содержимое: "
+            cat data/category-ads
+          else
+            echo "⚠️ data/category-ads не найден, создаём... "
+            echo "include:ads/hagezi" > data/category-ads
+          fi
 
       - name: Commit and push
         run: |
