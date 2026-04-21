@@ -1,0 +1,63 @@
+name: Generate Categories
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 0 * * *"   # каждый день в 01:00
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GH_PAT }}
+          fetch-depth: 0
+
+      - name: Generate category-* files
+        run: |
+          echo "🔧 Universal Category Generator"
+
+          for dir in data/*; do
+            [ -d "$dir" ] || continue
+            category=$(basename "$dir")
+
+            # Категория private — особая, её НЕ генерируем
+            if [[ "$category" == "private" ]]; then
+              echo "⚠️ Skipping category-private (special case)"
+              continue
+            fi
+
+            category_file="data/category-$category"
+
+            {
+              echo "# Auto-generated category: $category"
+              echo "# Generated: $(date -Iseconds)"
+              echo ""
+              for file in "$dir"/*; do
+                [ -f "$file" ] || continue
+                fname=$(basename "$file")
+                echo "include:$fname"
+              done
+            } > "$category_file"
+
+            echo "✅ Generated $category_file"
+          done
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git add data/category-*
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: auto-generate category files ($(date +%Y-%m-%d))"
+            git push origin HEAD:${{ github.ref_name }}
+            echo "📦 Categories updated"
+          else
+            echo "✅ No changes"
+          fi
