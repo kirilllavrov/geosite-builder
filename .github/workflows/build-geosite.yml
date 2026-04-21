@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - uses: actions/checkout@v6
         with:
@@ -28,8 +29,7 @@ jobs:
 
       - name: Clone v2fly builder
         run: |
-          git clone --depth 1 \
-            https://github.com/v2fly/domain-list-community.git builder
+          git clone --depth 1 https://github.com/v2fly/domain-list-community.git builder
 
       - name: Flatten data for builder
         run: |
@@ -37,14 +37,12 @@ jobs:
           mkdir -p builder/data
 
           > /tmp/valid_lists.txt
-          for dir in data/ru data/ads data/mobile \
-                     data/streaming data/browser data/cdn; do
+          for dir in data/ru data/ads data/mobile data/streaming data/browser data/cdn; do
             [ -d "$dir" ] || continue
             for file in "$dir"/*; do
               [ -f "$file" ] || continue
               fname=$(basename "$file")
               [[ "$fname" == category-* ]] && continue
-
 
               if grep -qE '^[a-zA-Z0-9]' "$file" 2>/dev/null; then
                 cp "$file" "builder/data/$fname"
@@ -100,41 +98,43 @@ jobs:
 
       - name: Publish to release branch
         run: |
+          # Сохраняем артефакты
           mkdir -p /tmp/geosite-release
-          cp output/geosite.dat /tmp/geosite-release/ 2>/dev/null || true
-          cp output/geosite.db /tmp/geosite-release/ 2>/dev/null || true
+          cp output/geosite.dat /tmp/geosite-release/geosite.dat
+          cp output/geosite.db /tmp/geosite-release/geosite.db
 
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          if ! git ls-remote --exit-code origin release >/dev/null 2>&1; then
-              # Ветки release нет — создаём чистую
-              git checkout -b release
-              git push -u origin release
+          git fetch origin
+
+          # Создаём или переключаемся на release
+          if git show-ref --verify --quiet refs/heads/release; then
+            git checkout release
+          elif git show-ref --verify --quiet refs/remotes/origin/release; then
+            git checkout -b release origin/release
           else
-              # Ветка release есть — очищаем рабочую директорию от файлов main
-              git fetch origin release
-              git reset --hard
-              git clean -fdx
-              git checkout release
+            git checkout --orphan release
           fi
 
-          cp /tmp/geosite-release/geosite.dat ./geosite.dat 2>/dev/null || true
-          cp /tmp/geosite-release/geosite.db ./geosite.db 2>/dev/null || true
+          # Полностью очищаем ветку release
+          git rm -rf . >/dev/null 2>&1 || true
+          git clean -fdx
+
+          # Кладём только геофайлы
+          cp /tmp/geosite-release/geosite.dat ./geosite.dat
+          cp /tmp/geosite-release/geosite.db ./geosite.db
 
           git add geosite.dat geosite.db
+
           if ! git diff --staged --quiet; then
             git commit -m "build: update geosite files ($(date +%Y-%m-%d))"
-            git push origin release
+            git push origin HEAD:release --force
             echo "✅ Опубликовано в ветку release" >&2
           else
             echo "✅ Файлы без изменений" >&2
           fi
 
-          git checkout -
-          mkdir -p output
-          cp /tmp/geosite-release/geosite.dat output/geosite.dat
-          cp /tmp/geosite-release/geosite.db output/geosite.db
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -151,10 +151,7 @@ jobs:
 
             🌐 jsDelivr CDN:
             ```
-            # V2Ray/Xray
             https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.dat
-
-            # Mihomo/Sing-box
             https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.db
             ```
           files: |
