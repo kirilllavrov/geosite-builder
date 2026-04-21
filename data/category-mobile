@@ -1,5 +1,22 @@
+# Auto-generated category: mobile
+# Generated: 2026-04-21T11:28:38+00:00
+
 include:apple
+include:apple-dev
+include:apple-pki
+include:apple-tvplus
+include:apple-update
+include:beats
 include:huawei
+include:huawei-dev
+include:huaweicloud
+include:icloud
+include:icloudprivaterelay
+include:itunes
+include:oneplus
 include:oppo
 include:samsung
+include:swift
 include:xiaomi
+include:xiaomi-ai
+include:xiaomi-iot
