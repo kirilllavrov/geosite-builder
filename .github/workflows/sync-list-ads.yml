@@ -41,6 +41,7 @@ jobs:
             awk '
               /^[!]/ {next}                # skip comments
               /^$/ {next}                  # skip empty lines
+              /\/+/ {next}                 # skip anything with a slash (URLs)
               {
                 line=$0
                 sub(/^\|\|/, "", line)     # remove leading ||
