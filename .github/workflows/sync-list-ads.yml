@@ -19,7 +19,7 @@ jobs:
 
           # Ads sources
           declare -a ADS=(
-          # "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/light.txt|hagezi"
+            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/light.txt|hagezi"
             "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/refs/heads/master/CyrillicFilters/RussianFilter/sections/adservers_firstparty.txt|adguard"
           )
 
@@ -76,7 +76,7 @@ jobs:
           else
             echo "⚠️ data/category-ads не найден, создаём... "
             {
-              # echo "include:ads/hagezi"
+              echo "include:ads/hagezi"
               echo "include:ads/adguard"
             } > data/category-ads
           fi
