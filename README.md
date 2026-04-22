@@ -12,22 +12,22 @@
 - **CDN** — прямая загрузка через jsDelivr
 ## 📥 Установка
 ### Через CDN (рекомендуется)
+#### V2Ray/Xray с jsDelivr CDN
 ```bash
-# V2Ray/Xray с jsDelivr CDN
 https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.dat
 ```
 или
+#### V2Ray/Xray с GitHub (прямой)
 ```bash
-# V2Ray/Xray с GitHub (прямой)
 https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.dat
 ```
+#### Sing-box/Mihomo с jsDelivr CDN
 ```bash
-# Sing-box/Mihomo с jsDelivr CDN
 https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.db
 ```
 или
+##### Sing-box/Mihomo с GitHub (прямой)
 ```bash
-# Sing-box/Mihomo с GitHub (прямой)
 https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.db
 ```
 ## 🗂 Структура данных
