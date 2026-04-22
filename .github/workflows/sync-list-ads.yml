@@ -13,23 +13,49 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           ref: main
 
-      - name: Download Hagezi DNS blocklist
+      - name: Download and clean Ads lists
         run: |
           mkdir -p data/ads
 
-          URL="https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/light.txt"
-          OUT_FILE="data/ads/hagezi"
+          # Ads sources
+          declare -a ADS=(
+            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/light.txt|hagezi"
+            "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/refs/heads/master/CyrillicFilters/RussianFilter/sections/adservers_firstparty.txt|adguard_firstparty"
+          )
 
-          echo "📥 Downloading Hagezi Pro list..."
-          if curl -sSL --fail -o "${OUT_FILE}" "${URL}"; then
+          for entry in "${ADS[@]}"; do
+            URL="${entry%%|*}"
+            NAME="${entry##*|}"
+            RAW_FILE="data/ads/${NAME}_raw"
+            OUT_FILE="data/ads/${NAME}"
+
+            echo "📥 Downloading ${NAME}..."
+            if curl -sSL --fail -o "${RAW_FILE}" "${URL}"; then
+              echo "✅ ${NAME} downloaded"
+            else
+              echo "❌ Failed to download ${NAME}"
+              continue
+            fi
+
+            echo "🧹 Cleaning ${NAME}..."
+            awk '
+              /^[!]/ {next}                # skip comments
+              /^$/ {next}                  # skip empty lines
+              {
+                line=$0
+                sub(/^\\|\\|/, "", line)   # remove leading ||
+                sub(/\^.*$/, "", line)     # cut at ^
+                sub(/\$.*$/, "", line)     # cut at $
+                gsub("\\*", "", line)      # remove wildcards
+                if (line != "") print line
+              }
+            ' "${RAW_FILE}" | sort -u > "${OUT_FILE}"
+
             lines=$(wc -l < "${OUT_FILE}")
-            echo "✅ Hagezi: ${lines} доменов"
-          else
-            echo "❌ Не удалось скачать Hagezi Pro list"
-            exit 1
-          fi
+            echo "✅ Cleaned ${NAME}: ${lines} доменов"
+          done
 
-          echo "📁 Файлов в data/ads/: "
+          echo "📁 Файлы в data/ads/: "
           ls -1 data/ads/
 
       - name: Update category-ads
@@ -37,12 +63,19 @@ jobs:
           if [ -f data/category-ads ]; then
             sed -i 's|include:ads/adguarddns|include:ads/hagezi|g' data/category-ads
             sed -i 's|include:adguarddns|include:hagezi|g' data/category-ads
+            for src in hagezi adguard_firstparty; do
+              if ! grep -q "include:ads/${src}" data/category-ads; then
+                echo "include:ads/${src}" >> data/category-ads
+              fi
+            done
             echo "✅ Обновлён data/category-ads"
-            echo "Содержимое: "
             cat data/category-ads
           else
             echo "⚠️ data/category-ads не найден, создаём... "
-            echo "include:ads/hagezi" > data/category-ads
+            {
+              echo "include:ads/hagezi"
+              echo "include:ads/adguard_firstparty"
+            } > data/category-ads
           fi
 
       - name: Commit and push
