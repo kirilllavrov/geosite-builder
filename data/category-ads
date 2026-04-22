@@ -3,3 +3,5 @@
 
 include:adguard_firstparty
 include:hagezi
+include:ads/hagezi
+include:ads/adguard_firstparty
