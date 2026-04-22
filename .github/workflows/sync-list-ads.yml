@@ -20,7 +20,7 @@ jobs:
           # Ads sources
           declare -a ADS=(
           # "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/light.txt|hagezi"
-            "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/refs/heads/master/CyrillicFilters/RussianFilter/sections/adservers_firstparty.txt|adguard_firstparty"
+            "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/refs/heads/master/CyrillicFilters/RussianFilter/sections/adservers_firstparty.txt|adguard"
           )
 
           for entry in "${ADS[@]}"; do
@@ -63,9 +63,9 @@ jobs:
       - name: Update category-ads
         run: |
           if [ -f data/category-ads ]; then
-            sed -i 's|include:ads/adguarddns|include:ads/hagezi|g' data/category-ads
-            sed -i 's|include:adguarddns|include:hagezi|g' data/category-ads
-            for src in hagezi adguard_firstparty; do
+            sed -i 's|include:ads/adguard|include:ads/hagezi|g' data/category-ads
+            sed -i 's|include:adguard|include:hagezi|g' data/category-ads
+            for src in hagezi adguard; do
               if ! grep -q "include:ads/${src}" data/category-ads; then
                 echo "include:ads/${src}" >> data/category-ads
               fi
@@ -76,7 +76,7 @@ jobs:
             echo "⚠️ data/category-ads не найден, создаём... "
             {
               # echo "include:ads/hagezi"
-              echo "include:ads/adguard_firstparty"
+              echo "include:ads/adguard"
             } > data/category-ads
           fi
 
