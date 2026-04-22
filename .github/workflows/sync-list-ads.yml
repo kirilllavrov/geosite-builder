@@ -26,10 +26,11 @@ jobs:
           for entry in "${ADS[@]}"; do
             URL="${entry%%|*}"
             NAME="${entry##*|}"
+            RAW_FILE="data/ads/${NAME}_raw"
             OUT_FILE="data/ads/${NAME}"
 
             echo "📥 Downloading ${NAME}..."
-            if curl -sSL --fail -o "${OUT_FILE}" "${URL}"; then
+            if curl -sSL --fail -o "${RAW_FILE}" "${URL}"; then
               echo "✅ ${NAME} downloaded"
             else
               echo "❌ Failed to download ${NAME}"
@@ -37,7 +38,6 @@ jobs:
             fi
 
             echo "🧹 Cleaning ${NAME}..."
-            tmpfile=$(mktemp)
             awk '
               /^[!]/ {next}                # skip comments
               /^$/ {next}                  # skip empty lines
@@ -49,8 +49,9 @@ jobs:
                 gsub("\\*", "", line)      # remove wildcards
                 if (line != "") print line
               }
-            ' "${OUT_FILE}" | sort -u > "${tmpfile}"
-            mv "${tmpfile}" "${OUT_FILE}"
+            ' "${RAW_FILE}" | sort -u > "${OUT_FILE}"
+
+            rm -f "${RAW_FILE}"
 
             lines=$(wc -l < "${OUT_FILE}")
             echo "✅ Cleaned ${NAME}: ${lines} доменов"
