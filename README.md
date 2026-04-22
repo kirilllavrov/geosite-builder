@@ -13,14 +13,21 @@
 ## 📥 Установка
 ### Через CDN (рекомендуется)
 ```bash
-# V2Ray/Xray
+# V2Ray/Xray с jsDelivr CDN
 https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.dat
+```
 или
+```bash
+# V2Ray/Xray с GitHub (прямой)
 https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.dat
-
-# Sing-box/Mihomo
+```
+```bash
+# Sing-box/Mihomo с jsDelivr CDN
 https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.db
+```
 или
+```bash
+# Sing-box/Mihomo с GitHub (прямой)
 https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.db
 ```
 ### Из GitHub Releases
