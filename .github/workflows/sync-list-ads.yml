@@ -37,6 +37,7 @@ jobs:
             fi
 
             echo "🧹 Cleaning ${NAME}..."
+            tmpfile=$(mktemp)
             awk '
               /^[!]/ {next}                # skip comments
               /^$/ {next}                  # skip empty lines
@@ -48,7 +49,8 @@ jobs:
                 gsub("\\*", "", line)      # remove wildcards
                 if (line != "") print line
               }
-            ' "${OUT_FILE}" | sort -u -o "${OUT_FILE}"
+            ' "${OUT_FILE}" | sort -u > "${tmpfile}"
+            mv "${tmpfile}" "${OUT_FILE}"
 
             lines=$(wc -l < "${OUT_FILE}")
             echo "✅ Cleaned ${NAME}: ${lines} доменов"
