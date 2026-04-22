@@ -11,22 +11,19 @@
 - **GitHub Releases** — готовые файлы в каждом релизе
 - **CDN** — прямая загрузка через jsDelivr
 ## 📥 Установка
-### Через CDN (рекомендуется)
-#### V2Ray/Xray с jsDelivr CDN
+### V2Ray/Xray
 ```bash
 https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.dat
 ```
 или
-#### V2Ray/Xray с GitHub (прямой)
 ```bash
 https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.dat
 ```
-#### Sing-box/Mihomo с jsDelivr CDN
+### Sing-box/Mihomo
 ```bash
 https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.db
 ```
 или
-##### Sing-box/Mihomo с GitHub (прямой)
 ```bash
 https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.db
 ```
