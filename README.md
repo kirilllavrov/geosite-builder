@@ -30,8 +30,6 @@ https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.db
 # Sing-box/Mihomo с GitHub (прямой)
 https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.db
 ```
-### Из GitHub Releases
-Скачайте файлы из последнего релиза: https://github.com/kirilllavrov/geosite-builder/releases
 ## 🗂 Структура данных
 ```
 data/
