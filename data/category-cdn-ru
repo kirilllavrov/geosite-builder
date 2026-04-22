@@ -1,7 +1,8 @@
 # Auto-generated category: cdn-ru
-# Generated: 2026-04-22T03:37:15+00:00
+# Generated: 2026-04-22T18:13:58+00:00
 
 include:akamaized
+include:appsflyersdk
 include:dbankcloud
 include:edna
 include:hicloud
