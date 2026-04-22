@@ -15,8 +15,13 @@
 ```bash
 # V2Ray/Xray
 https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.dat
+или
+https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.dat
+
 # Sing-box/Mihomo
 https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.db
+или
+https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.db
 ```
 ### Из GitHub Releases
 Скачайте файлы из последнего релиза: https://github.com/kirilllavrov/geosite-builder/releases
