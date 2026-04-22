@@ -177,6 +177,7 @@ jobs:
             🌐 jsDelivr CDN:
             ```
             https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.dat
+            
             https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.db
             ```
           files: |
