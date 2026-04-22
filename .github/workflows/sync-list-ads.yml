@@ -20,7 +20,7 @@ jobs:
           # Ads sources
           declare -a ADS=(
             "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/light.txt|hagezi"
-            "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/refs/heads/master/CyrillicFilters/RussianFilter/sections/adservers_firstparty.txt|adguard"
+            #"https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/refs/heads/master/CyrillicFilters/RussianFilter/sections/adservers_firstparty.txt|adguard"
           )
 
           for entry in "${ADS[@]}"; do
@@ -77,7 +77,7 @@ jobs:
             echo "⚠️ data/category-ads не найден, создаём... "
             {
               echo "include:ads/hagezi"
-              echo "include:ads/adguard"
+              #echo "include:ads/adguard"
             } > data/category-ads
           fi
 
