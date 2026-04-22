@@ -43,7 +43,7 @@ jobs:
               /^$/ {next}                  # skip empty lines
               {
                 line=$0
-                sub(/^\\|\\|/, "", line)   # remove leading ||
+                sub(/^\|\|/, "", line)     # remove leading ||
                 sub(/\^.*$/, "", line)     # cut at ^
                 sub(/\$.*$/, "", line)     # cut at $
                 gsub("\\*", "", line)      # remove wildcards
