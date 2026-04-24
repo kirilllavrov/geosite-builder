@@ -1,5 +1,5 @@
-# Auto-generated category: ru
-# Generated: 2026-04-24T02:49:39+00:00
+# Auto-generated RU category list
+# Generated: 2026-04-24T03:41:54+00:00
 
 include:bank-ru
 include:delivery-ru
@@ -8,6 +8,7 @@ include:ecommerce-ru
 include:gov-ru
 include:logistics-ru
 include:media-ru
+include:medicine-ru
 include:retail-ru
 include:services-ru
 include:social-media-ru
