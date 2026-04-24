@@ -44,8 +44,8 @@ jobs:
             base=$(basename "$dir")
 
             case "$base" in
-              private) continue ;;      # private — особый случай
-              category-*) continue ;;   # пропускаем category-* директории
+              private) continue ;;
+              category-*) continue ;;
             esac
 
             DATA_DIRS+=("$dir")
@@ -120,12 +120,15 @@ jobs:
           echo "📊 geosite.dat: $(ls -lh ../output/geosite.dat | awk '{print $5}')"
           echo "📊 geosite.db: $(ls -lh ../output/geosite.db | awk '{print $5}')"
 
-      - name: Publish to release branch
+      - name: Prepare temp release files
         run: |
           mkdir -p /tmp/geosite-release
           cp output/geosite.dat /tmp/geosite-release/geosite.dat
           cp output/geosite.db /tmp/geosite-release/geosite.db
+          sha256sum /tmp/geosite-release/geosite.dat | awk '{print $1}' > /tmp/geosite-release/geosite.dat.sha256sum
 
+      - name: Publish to release branch
+        run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
@@ -144,8 +147,9 @@ jobs:
 
           cp /tmp/geosite-release/geosite.dat ./geosite.dat
           cp /tmp/geosite-release/geosite.db ./geosite.db
+          cp /tmp/geosite-release/geosite.dat.sha256sum ./geosite.dat.sha256sum
 
-          git add geosite.dat geosite.db
+          git add geosite.dat geosite.db geosite.dat.sha256sum
 
           if ! git diff --staged --quiet; then
             git commit -m "build: update geosite files ($(date +%Y-%m-%d))"
@@ -159,6 +163,11 @@ jobs:
           mkdir -p output
           cp /tmp/geosite-release/geosite.dat output/geosite.dat
           cp /tmp/geosite-release/geosite.db output/geosite.db
+          cp /tmp/geosite-release/geosite.dat.sha256sum output/geosite.dat.sha256sum
+
+      - name: Read SHA256
+        id: sha256
+        run: echo "SHA256=$(cat output/geosite.dat.sha256sum)" >> $GITHUB_ENV
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -170,6 +179,7 @@ jobs:
 
             🔄 Run: #${{ github.run_number }}
             🔗 Commit: ${{ github.sha }}
+
             📦 Форматы:
             - geosite.dat (V2Ray/Xray)
             - geosite.db (Sing-box/Mihomo)
@@ -177,12 +187,17 @@ jobs:
             🌐 jsDelivr CDN:
             ```
             https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.dat
-            
             https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.db
+            https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.dat.sha256sum
+            ```
+            🔑 SHA256:
+            ```
+            ${{ env.SHA256 }}
             ```
           files: |
             output/geosite.dat
             output/geosite.db
+            output/geosite.dat.sha256sum
           fail_on_unmatched_files: true
           make_latest: true
           overwrite_files: true
