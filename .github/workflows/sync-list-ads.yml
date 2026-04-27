@@ -20,7 +20,7 @@ jobs:
           # Ads sources
           declare -a ADS=(
             "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/light.txt|hagezi"
-            #"https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/refs/heads/master/CyrillicFilters/RussianFilter/sections/adservers_firstparty.txt|adguard"
+            "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/refs/heads/master/CyrillicFilters/RussianFilter/sections/adservers_firstparty.txt|adguard"
           )
 
           for entry in "${ADS[@]}"; do
@@ -41,13 +41,24 @@ jobs:
             awk '
               /^[!]/ {next}                # skip comments
               /^$/ {next}                  # skip empty lines
-              /\/+/ {next}                 # skip anything with a slash (URLs)
+              /\/+/ {next}                 # skip URLs with paths
               {
                 line=$0
-                sub(/^\|\|/, "", line)     # remove leading ||
-                sub(/\^.*$/, "", line)     # cut at ^
-                sub(/\$.*$/, "", line)     # cut at $
-                gsub("\\*", "", line)      # remove wildcards
+
+                # remove adblock syntax
+                sub(/^\|\|/, "", line)
+                sub(/\^.*$/, "", line)
+                sub(/\$.*$/, "", line)
+                gsub("\\*", "", line)
+
+                # split into parts
+                n = split(line, parts, ".")
+
+                # normalize to last 3 parts
+                if (n >= 3) {
+                  line = parts[n-2] "." parts[n-1] "." parts[n]
+                }
+
                 if (line != "") print line
               }
             ' "${RAW_FILE}" | sort -u > "${OUT_FILE}"
@@ -55,10 +66,10 @@ jobs:
             rm -f "${RAW_FILE}"
 
             lines=$(wc -l < "${OUT_FILE}")
-            echo "✅ Cleaned ${NAME}: ${lines} доменов"
+            echo "✅ Cleaned ${NAME}: ${lines} domains"
           done
 
-          echo "📁 Файлы в data/ads/: "
+          echo "📁 Files in data/ads/:"
           ls -1 data/ads/
 
       - name: Update category-ads
@@ -71,13 +82,13 @@ jobs:
                 echo "include:ads/${src}" >> data/category-ads
               fi
             done
-            echo "✅ Обновлён data/category-ads"
+            echo "✅ Updated data/category-ads"
             cat data/category-ads
           else
-            echo "⚠️ data/category-ads не найден, создаём... "
+            echo "⚠️ data/category-ads not found, creating..."
             {
               echo "include:ads/hagezi"
-              #echo "include:ads/adguard"
+              echo "include:ads/adguard"
             } > data/category-ads
           fi
 
