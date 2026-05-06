@@ -51,14 +51,6 @@ jobs:
                 sub(/\$.*$/, "", line)
                 gsub("\\*", "", line)
 
-                # split into parts
-                n = split(line, parts, ".")
-
-                # normalize to last 3 parts
-                if (n >= 3) {
-                  line = parts[n-2] "." parts[n-1] "." parts[n]
-                }
-
                 if (line != "") print line
               }
             ' "${RAW_FILE}" | sort -u > "${OUT_FILE}"
