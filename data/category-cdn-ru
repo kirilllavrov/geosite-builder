@@ -1,10 +1,10 @@
 # Auto-generated category: cdn-ru
-# Generated: 2026-05-18T14:18:57+00:00
+# Generated: 2026-05-18T14:30:42+00:00
 
 include:akamaized
 include:dbankcloud
 include:edna
 include:hicloud
-include:ipify
 include:k2cloud
 include:servicecdn
+include:track
