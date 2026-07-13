@@ -1,9 +1,11 @@
 # Auto-generated category: mobile
-# Generated: 2026-07-12T03:49:29+00:00
+# Generated: 2026-07-13T02:56:00+00:00
 
 include:apple
 include:apple-dev
+include:apple-music
 include:apple-pki
+include:apple-podcasts
 include:apple-tvplus
 include:apple-update
 include:beats
