@@ -56,6 +56,49 @@ jobs:
 
           > /tmp/valid_lists.txt
 
+          # Часть списков (напр. ads/adguard) авто-скачивается из сторонних
+          # репозиториев, где могут встречаться опечатки вроде
+          # "dw-informer-.newsru.com". Сборщик v2fly падает на первой такой
+          # строке, поэтому фильтруем их при "уплощении": логика повторяет
+          # validateDomainName() из domain-list-community (домен <=253,
+          # метка непустая/<=63, без '-' в начале/конце, только [a-z0-9.-]).
+          # Типизированные строки (regexp:/keyword:/include:/domain:/full:)
+          # и строки с атрибутами (domain @cn) сохраняются как есть.
+          sanitize_list() {
+            local src="$1" dst="$2"
+            awk -v dst="$dst" '
+              function isType(t){ return (t=="include"||t=="domain"||t=="full"||t=="keyword"||t=="regexp") }
+              function badDomain(d,  n,a,i,l){
+                if(d==""||length(d)>253) return 1
+                n=split(d,a,".")
+                for(i=1;i<=n;i++){ l=a[i]
+                  if(l==""||length(l)>63) return 1
+                  if(l !~ /^[a-zA-Z0-9]/ || l !~ /[a-zA-Z0-9]$/ || l ~ /[^a-zA-Z0-9-]/) return 1
+                }
+                return 0
+              }
+              { raw=$0; line=$0
+                sub(/#.*/,"",line); gsub(/^[[:space:]]+|[[:space:]]+$/,"",line)
+                if(line==""){ print raw; next }   # пустые строки и комментарии
+                ci=index(line,":")
+                if(ci>0){
+                  typ=tolower(substr(line,1,ci-1))
+                  if(isType(typ)){
+                    if(typ=="domain"||typ=="full"){
+                      rest=substr(line,ci+1); split(rest,f," "); val=f[1]
+                      if(badDomain(val)){ printf "⚠️ Отброшено в %s: %s (invalid domain)\n", dst, raw > "/dev/stderr"; next }
+                    }
+                    print raw; next
+                  }
+                  printf "⚠️ Отброшено в %s: %s (unknown type)\n", dst, raw > "/dev/stderr"; next
+                }
+                split(line,f," "); val=f[1]        # обычный домен (+атрибуты)
+                if(badDomain(val)){ printf "⚠️ Отброшено в %s: %s (invalid domain)\n", dst, raw > "/dev/stderr"; next }
+                print raw
+              }
+            ' "$src"
+          }
+
           for dir in "${DATA_DIRS[@]}"; do
             for file in "$dir"/*; do
               [ -f "$file" ] || continue
@@ -63,11 +106,15 @@ jobs:
 
               [[ "$fname" == category-* ]] && continue
 
-              if grep -qE '^[a-zA-Z0-9]' "$file" 2>/dev/null; then
-                cp "$file" "builder/data/$fname"
+              tmp="builder/data/.$fname.tmp"
+              sanitize_list "$file" "$fname" > "$tmp"
+
+              if grep -qE '^[a-zA-Z0-9]' "$tmp" 2>/dev/null; then
+                mv "$tmp" "builder/data/$fname"
                 echo "$fname" >> /tmp/valid_lists.txt
               else
-                echo "⚠️ Пропущен (пустой): $fname"
+                rm -f "$tmp"
+                echo "⚠️ Пропущен (пустой после фильтра): $fname"
               fi
             done
           done
