@@ -1,8 +1,6 @@
 # Auto-generated category: ads
-# Generated: 2026-10-16T04:22:05+00:00
+# Generated: 2026-10-17T03:25:46+00:00
 
-include:hagezi
+include:adguard
 include:collection
 include:hagezi
-include:ads/hagezi
-include:ads/adguard
