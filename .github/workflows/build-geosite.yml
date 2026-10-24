@@ -214,7 +214,10 @@ jobs:
 
       - name: Read SHA256
         id: sha256
-        run: echo "SHA256=$(cat output/geosite.dat.sha256sum)" >> $GITHUB_ENV
+        run: |
+          SHA256="$(cat output/geosite.dat.sha256sum)"
+          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+          echo "SHA256=$SHA256" >> "$GITHUB_ENV"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -239,7 +242,7 @@ jobs:
             ```
             🔑 SHA256:
             ```
-            ${{ env.SHA256 }}
+            ${{ steps.sha256.outputs.sha256 }}
             ```
           files: |
             output/geosite.dat
