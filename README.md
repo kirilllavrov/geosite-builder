@@ -5,6 +5,7 @@
 - **Мультиформатность** — поддержка V2Ray/Xray (`.dat`) и Sing-box/Mihomo (`.db`)
 - **Источники данных**:
   - 🇷🇺 Российские домены из [kirilllavrov/whitelists](https://github.com/kirilllavrov/whitelists)
+  - ✅ Белый список доменов из [kirilllavrov/whitelists](https://github.com/kirilllavrov/whitelists) (`release/whitelist.txt`)
   - 🌐 Международные списки из [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community)
   - 🚫 Рекламные блокировки из [Hagezi DNS blocklists](https://github.com/hagezi/dns-blocklists)
 - **Категоризация** — автоматическая генерация категорий для удобной фильтрации
@@ -31,6 +32,7 @@ https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.d
 ```
 data/
 ├── ru/           # Российские домены
+├── whitelist/    # Белый список доменов
 ├── mobile/       # Мобильные сервисы (Apple, Huawei, Xiaomi и др.)
 ├── streaming/    # Стриминговые платформы (YouTube, Netflix)
 ├── browser/      # Браузеры и связанные сервисы
@@ -43,6 +45,7 @@ data/
 | Workflow | Описание | Расписание |
 |----------|----------|------------|
 | **Sync RU Lists** | Синхронизация российских доменов | Ежедневно в 00:05 UTC |
+| **Sync Whitelist** | Обновление белого списка доменов | Ежедневно в 00:15 UTC |
 | **Sync Ads Lists** | Обновление рекламных блоков (Hagezi) | Ежедневно в 00:00 UTC |
 | **Sync Lists** | Загрузка мобильных, стриминговых и других списков | Ежедневно в 00:10 UTC |
 | **Generate Categories** | Автогенерация файлов категорий | По триггеру |
@@ -92,6 +95,7 @@ rules:
 ```
 ## 📊 Доступные категории
 - `ru` — российские домены
+- `whitelist` — белый список доменов
 - `mobile` — мобильные сервисы
 - `streaming` — стриминговые платформы
 - `browser` — браузеры

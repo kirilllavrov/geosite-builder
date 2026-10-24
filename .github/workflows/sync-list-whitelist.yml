@@ -1,0 +1,111 @@
+name: Sync Whitelist
+on:
+  schedule:
+    - cron: '15 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GH_PAT }}
+          ref: main
+
+      - name: Download and clean Whitelist
+        run: |
+          mkdir -p data/whitelist
+
+          SRC_URL="https://raw.githubusercontent.com/kirilllavrov/whitelists/refs/heads/main/release/whitelist.txt"
+          RAW_FILE="data/whitelist/.whitelist_raw"
+          OUT_FILE="data/whitelist/whitelist"
+
+          echo "📥 Downloading whitelist..."
+          if curl -sSL --fail -o "${RAW_FILE}" "${SRC_URL}"; then
+            echo "✅ whitelist downloaded"
+          else
+            echo "❌ Failed to download whitelist"
+            rm -f "${RAW_FILE}"
+            exit 1
+          fi
+
+          echo "🧹 Cleaning whitelist..."
+          cat > /tmp/process_whitelist.py << 'PYEOF'
+          import re
+          import sys
+          import encodings.idna
+
+          ascii_re = re.compile(r'^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$')
+
+          def to_punycode(domain):
+              labels = []
+              for label in domain.split('.'):
+                  if any(ord(c) > 127 for c in label):
+                      try:
+                          label = encodings.idna.ToASCII(label).decode('ascii')
+                      except Exception:
+                          return None
+                  labels.append(label.lower())
+              return '.'.join(labels)
+
+          def is_valid_ascii_domain(d):
+              return bool(ascii_re.match(d)) and '.' in d
+
+          src, dst = sys.argv[1], sys.argv[2]
+          result = set()
+
+          with open(src, 'r', encoding='utf-8') as f:
+              for line in f:
+                  line = line.split('#', 1)[0].strip()
+                  if not line or line.startswith('!'):
+                      continue
+                  if any(ch in line for ch in '/*|^$@ '):
+                      continue
+
+                  d = to_punycode(line)
+                  if d and is_valid_ascii_domain(d):
+                      result.add(d)
+
+          if not result:
+              print('❌ No valid domains found, keeping previous list', file=sys.stderr)
+              sys.exit(1)
+
+          with open(dst, 'w', encoding='utf-8') as f:
+              f.write('\n'.join(sorted(result)) + '\n')
+
+          print(f'✅ {dst}: {len(result)} domains')
+          PYEOF
+
+          python3 /tmp/process_whitelist.py "${RAW_FILE}" "${OUT_FILE}"
+          rm -f "${RAW_FILE}"
+
+          lines=$(wc -l < "${OUT_FILE}")
+          echo "✅ Cleaned whitelist: ${lines} domains"
+          echo "📁 Files in data/whitelist/:"
+          ls -1 data/whitelist/
+
+      - name: Update category-whitelist
+        run: |
+          {
+            echo "# Auto-generated category: whitelist"
+            echo "# Generated: $(date -Iseconds)"
+            echo ""
+            echo "include:whitelist"
+          } > data/category-whitelist
+          echo "✅ Updated data/category-whitelist"
+          cat data/category-whitelist
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/whitelist/ data/category-whitelist
+          git commit -m "chore: update whitelist ($(date +%Y-%m-%d))" || true
+          git push origin HEAD:${{ github.ref_name }} || true
+
+      - name: Trigger category generator
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GH_PAT }}
+          event-type: generate-categories
