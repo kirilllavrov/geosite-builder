@@ -11,6 +11,7 @@
 - **Категоризация** — автоматическая генерация категорий для удобной фильтрации
 - **GitHub Releases** — готовые файлы в каждом релизе
 - **CDN** — прямая загрузка через jsDelivr
+- **Зеркало** — копии файлов в Yandex Object Storage (раздача из РФ)
 ## 📥 Установка
 ### V2Ray/Xray
 ```bash
@@ -20,6 +21,10 @@ https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.dat
 ```bash
 https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.dat
 ```
+или (зеркало для РФ)
+```bash
+https://storage.yandexcloud.net/flyz-cryp-olxn-mojw/geofiles/geosite.dat
+```
 ### Sing-box/Mihomo
 ```bash
 https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.db
@@ -28,6 +33,13 @@ https://cdn.jsdelivr.net/gh/kirilllavrov/geosite-builder@release/geosite.db
 ```bash
 https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.db
 ```
+или (зеркало для РФ)
+```bash
+https://storage.yandexcloud.net/flyz-cryp-olxn-mojw/geofiles/geosite.db
+```
+> ℹ️ Целостность `geosite.dat` проверяйте по `geosite.dat.sha256sum` —
+> `https://storage.yandexcloud.net/flyz-cryp-olxn-mojw/geofiles/geosite.dat.sha256sum`
+> или `https://raw.githubusercontent.com/kirilllavrov/geosite-builder/release/geosite.dat.sha256sum`.
 ## 🗂 Структура данных
 ```
 data/
@@ -50,6 +62,11 @@ data/
 | **Sync Lists** | Загрузка мобильных, стриминговых и других списков | Ежедневно в 00:10 UTC |
 | **Generate Categories** | Автогенерация файлов категорий | По триггеру |
 | **Build Geosite** | Сборка финальных файлов `.dat` и `.db` | Ежедневно в 02:00 UTC |
+
+> ℹ️ **Build Geosite** дополнительно выгружает `geosite.dat`, `geosite.db` и `geosite.dat.sha256sum`
+> в бакет Yandex Object Storage (`geofiles/`), когда файлы изменились. Для этого нужны секреты
+> `YC_S3_KEY_ID` и `YC_S3_SECRET` (статический ключ сервисного аккаунта с ролью `storage.uploader`).
+> Ручной запуск с `force_upload` выгружает файлы в бакет даже без изменений.
 ## 🚀 Использование
 ### V2Ray / Xray
 ```json
