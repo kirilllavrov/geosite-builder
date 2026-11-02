@@ -18,11 +18,19 @@ jobs:
           mkdir -p data/ads
 
           # Ads sources
+          # hagezi: jsDelivr отдаёт 403 — репозиторий вырос больше лимита 150 МБ
+          # («Package size exceeded the configured limit»), а каталог domains/
+          # переименован в wildcard/. Берём напрямую из raw.githubusercontent:
+          # light-onlydomains.txt — чистые домены, ровно один на строку.
           declare -a ADS=(
-            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/light.txt|hagezi"
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/light-onlydomains.txt|hagezi"
             "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/refs/heads/master/CyrillicFilters/RussianFilter/sections/adservers_firstparty.txt|adguard"
           )
 
+          # Неудача скачивания не должна проходить незамеченной: 31.07.2026 hagezi
+          # перестал скачиваться, workflow ещё три месяца рапортовал success, и
+          # рекламный список молча старел (к ноябрю расхождение достигло 60%)
+          FAILED=()
           for entry in "${ADS[@]}"; do
             URL="${entry%%|*}"
             NAME="${entry##*|}"
@@ -30,10 +38,11 @@ jobs:
             OUT_FILE="data/ads/${NAME}"
 
             echo "📥 Downloading ${NAME}..."
-            if curl -sSL --fail -o "${RAW_FILE}" "${URL}"; then
+            if curl -sSL --fail --retry 3 --retry-delay 5 -o "${RAW_FILE}" "${URL}"; then
               echo "✅ ${NAME} downloaded"
             else
-              echo "❌ Failed to download ${NAME}"
+              echo "::error::Не удалось скачать ${NAME} из ${URL} — файл data/ads/${NAME} остался прежним"
+              FAILED+=("${NAME}")
               continue
             fi
 
@@ -63,6 +72,19 @@ jobs:
 
           echo "📁 Files in data/ads/:"
           ls -1 data/ads/
+
+          if [ "${#FAILED[@]}" -gt 0 ]; then
+            {
+              echo "### ⚠️ Списки не обновились"
+              echo ""
+              for name in "${FAILED[@]}"; do
+                echo "- \`${name}\` — скачивание не удалось, в сборке остался прошлый файл"
+              done
+              echo ""
+              echo "Проверьте URL источника: он мог переехать или упереться в лимит CDN."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
       - name: Update category-ads
         run: |
