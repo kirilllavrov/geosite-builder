@@ -1,14 +1,3 @@
-include:apple-dev
-# Not include:apple-intelligence
-include:apple-music
-include:apple-pki
-include:apple-podcasts
-include:apple-tvplus
-include:apple-update
-include:beats
-include:icloud
-include:itunes
-
 # All .apple domains
 apple
 
