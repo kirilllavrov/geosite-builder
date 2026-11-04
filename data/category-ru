@@ -1,17 +1,24 @@
-# Auto-generated category: ru
-# Generated: 2026-11-04T15:41:10+00:00
+# Auto-generated RU category list
+# Generated: 2026-11-04T16:31:43+00:00
 
 include:bank-ru
+include:cloud-ru
 include:delivery-ru
 include:developer-ru
 include:ecommerce-ru
+include:education-ru
+include:finance-ru
 include:gov-ru
 include:insurance-ru
+include:jkh-ru
 include:logistics-ru
 include:media-ru
 include:medicine-ru
 include:retail-ru
 include:services-ru
 include:social-media-ru
+include:sport-ru
 include:streaming-ru
 include:telecom-ru
+include:transport-ru
+include:travel-ru
