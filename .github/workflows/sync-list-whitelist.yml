@@ -17,7 +17,7 @@ jobs:
         run: |
           mkdir -p data/whitelist
 
-          SRC_URL="https://raw.githubusercontent.com/kirilllavrov/whitelists/refs/heads/main/release/whitelist.txt"
+          SRC_URL="https://raw.githubusercontent.com/kirilllavrov/whitelists/refs/heads/main/release/whitelist-common.txt"
           RAW_FILE="data/whitelist/.whitelist_raw"
           OUT_FILE="data/whitelist/whitelist"
 
