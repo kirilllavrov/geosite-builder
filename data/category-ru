@@ -1,8 +1,7 @@
-# Auto-generated category: ru
-# Generated: 2026-11-23T06:18:30+00:00
+# Auto-generated RU category list
+# Generated: 2026-11-23T07:20:44+00:00
 
 include:bank-ru
-include:cdn-global
 include:cdn-ru
 include:cloud-ru
 include:delivery-ru
